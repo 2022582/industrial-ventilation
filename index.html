@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트 현장 안전 자가진단 시스템</title>
+    <style>
+        :root { --primary-color: #2c3e50; --accent-color: #3498db; --danger-color: #e74c3c; --success-color: #27ae60; --kosha-blue: #4a90e2; --fire-red: #d35400; --iot-color: #9b59b6; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #ecf0f1; margin: 0; padding: 10px; }
+        .header { background: var(--primary-color); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .title-area { display: flex; align-items: center; gap: 10px; }
+        .smart-badge { background-color: var(--danger-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; animation: pulse 2s infinite; }
+        
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        /* 경고 애니메이션 최적화 (도형 호환) */
+        @keyframes blink-red { 
+            0% { background-color: #e74c3c; } 
+            50% { background-color: #900C3F; filter: drop-shadow(0 0 10px #e74c3c); box-shadow: 0 0 10px #e74c3c; } 
+            100% { background-color: #e74c3c; } 
+        }
+
+        /* 탭 메뉴 스타일 */
+        .tabs { display: flex; margin-bottom: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 15px 5px; text-align: center; cursor: pointer; font-weight: bold; background: #ecf0f1; border: none; outline: none; transition: 0.3s; font-size: 14px; color: #555; }
+        @media (min-width: 768px) { .tab-btn { font-size: 15px; } }
+        .tab-btn:hover { background: #dfe6e9; }
+        .tab-btn.active { background: var(--accent-color); color: white; }
+
+        /* 컨텐츠 영역 */
+        .tab-content { display: none; flex-direction: column; gap: 10px; }
+        .tab-content.active { display: flex; }
+        @media (min-width: 768px) { .tab-content.active { flex-direction: row; } }
+        
+        /* 패널 공통 스타일 */
+        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .sidebar { order: 2; display: flex; flex-direction: column; width: 100%; }
+        .main-content { order: 1; position: relative; width: 100%; }
+        @media (min-width: 768px) { .sidebar { width: 350px; order: 1; } .main-content { flex: 1; order: 2; } }
+        
+        /* 1. 국소배기 탭 도면 영역 */
+        .layout-container { position: relative; width: 100%; height: 400px; background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; overflow: hidden; touch-action: none; background-image: radial-gradient(#e0e0e0 1px, transparent 1px); background-size: 20px 20px; }
+        @media (min-width: 768px) { .layout-container { height: 600px; } }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        .canvas-drawing { cursor: crosshair; }
+        
+        /* --- 🚀 도형 디자인 (네모, 동그라미, 세모) --- */
+        .hood-marker { position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; cursor: move; transition: top 0.2s, left 0.2s; display: flex; justify-content: center; box-sizing: border-box; }
+        
+        .shape-square { border-radius: 4px; width: 40px; height: 40px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .shape-circle { border-radius: 50%; width: 44px; height: 44px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .shape-triangle { 
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%); 
+            width: 50px; height: 45px; 
+            align-items: flex-end; padding-bottom: 8px; 
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); /* 세모 전용 그림자 */
+        }
+        .marker-danger { animation: blink-red 1s infinite !important; }
+
+        /* 도면 범례(Legend) 스타일 */
+        .map-legend { position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 11px; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); line-height: 1.5; color: #333; }
+
+        .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px; }
+        .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; transition: 0.3s; }
+
+        /* 2, 3탭 (가이드/계산기) 전용 스타일 */
+        .result-container { display: flex; gap: 15px; flex-wrap: wrap; }
+        .guide-box { border: 2px solid var(--kosha-blue); border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f4f8fd; flex: 1; min-width: 250px; }
+        .guide-box.fire-box { border-color: var(--fire-red); background: #fdf6f2; }
+        .guide-title { font-size: 18px; font-weight: bold; color: var(--primary-color); border-bottom: 2px solid var(--kosha-blue); padding-bottom: 8px; margin-bottom: 12px; margin-top: 0; }
+        .fire-title { border-bottom-color: var(--fire-red); color: var(--fire-red); }
+        .result-highlight { font-size: 24px; font-weight: bold; color: var(--danger-color); }
+        .info-list { padding-left: 20px; margin: 0; line-height: 1.6; font-size: 14px; }
+        .input-section { display: none; background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px dashed #ccc; }
+        .input-section.active { display: block; }
+        .formula-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-top: 10px; text-align: center; overflow-x: auto; }
+        .formula-img { color: var(--danger-color); font-weight: bold; font-size: 18px; letter-spacing: 1px; }
+
+        /* 폼 스타일 */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
+        .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .radio-group { display: flex; gap: 15px; margin-bottom: 10px; }
+        button { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        button:hover { background: #2980b9; }
+        .btn-fire { background: var(--fire-red); } .btn-fire:hover { background: #ba4a00; }
+        .btn-draw { background: #95a5a6; padding: 10px; }
+        .btn-iot { background: var(--iot-color); display: flex; justify-content: center; align-items: center; gap: 5px; } .btn-iot:hover { background: #8e44ad; }
+        .btn-print { background: #34495e; width: auto; }
+        .copyright-sidebar { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #7f8c8d; }
+
+        /* 인쇄 규격 */
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            body { background: white; margin: 0; padding: 0; font-size: 11pt; }
+            .sidebar, .tabs, button, .header button { display: none !important; }
+            .tab-content { display: none !important; } .tab-content.active { display: block !important; width: 100%; }
+            .main-content { width: 100%; box-shadow: none; border: none; padding: 0; display: block !important; }
+            .layout-container { border: 2px solid #000; height: 100mm !important; max-height: 100mm; page-break-inside: avoid; margin-bottom: 15px; background-image: none; }
+            canvas { width: 100% !important; height: 100% !important; }
+            .map-legend { display: none !important; } /* 인쇄 시 범례 숨김 가능 (필요시 표시하려면 제거) */
+            #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15px; font-weight: bold; color: black; }
+            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; table-layout: fixed; }
+            .print-table tr { page-break-inside: avoid; page-break-after: auto; } .print-table th { background-color: #f2f2f2 !important; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; word-wrap: break-word; }
+            .result-container { display: block !important; }
+            .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; box-sizing: border-box; display: block; }
+            .guide-title { color: black; border-bottom: 2px solid #000; font-size: 14pt; padding-bottom: 5px; }
+            .result-highlight { color: black; font-size: 16pt; }
+            .copyright-print { display: block; margin-top: 20px; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+        .print-table, #printTitle, .copyright-print { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-area">
+            <h2 style="margin:0; font-size: 18px;">🛡️ AI 현장 안전 통합 플랫폼</h2>
+            <span class="smart-badge">AI/IoT 적용형</span>
+        </div>
+        <button type="button" class="btn-print" onclick="window.print()">보고서 출력</button>
+    </div>
+
+    <div class="tabs">
+        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 AI관제</button>
+        <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-confined')">2. 밀폐공간 급기</button>
+        <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-fire')">3. 화재/폭발 환기량</button>
+    </div>
+
+    <div id="tab-exhaust" class="tab-content active">
+        <div class="sidebar panel">
+            <h3 style="margin-top:0;">환경 설정</h3>
+            <div class="form-group"><label>🏢 1. 전체 공장명</label><input type="text" id="factoryName" placeholder="예: 창원 제1공장"></div>
+            <div class="form-group"><label>2. 세부 공정명</label><input type="text" id="processName" placeholder="예: 도장 1라인"></div>
+            <div class="form-group"><label>3. 물질 상태 선택</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="state" value="gaseous" checked onchange="updateLegalVelocity()"> 가스상</label>
+                    <label><input type="radio" name="state" value="particulate" onchange="updateLegalVelocity()"> 입자상</label>
+                </div>
+            </div>
+            <div class="form-group"><label>4. 후드 형태 선택</label>
+                <select id="hoodType" onchange="updateLegalVelocity()">
+                    <option value="enclosed">포위식 (네모)</option>
+                    <option value="booth">부스식 (동그라미)</option>
+                    <option value="lateral">외부식 - 측방형 (세모)</option>
+                    <option value="downward">외부식 - 하방형 (세모)</option>
+                    <option value="upward">외부식 - 상방형 (세모)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>5. 법적 제어유속</label><input type="number" id="legalVelocity" readonly style="background-color: #f8f9fa;"></div>
+            <div class="form-group"><label>6. 현재 측정유속 (m/s)</label><input type="number" id="measuredVelocity" step="0.01" placeholder="현장 측정값 입력"></div>
+            
+            <button type="button" onclick="addHoodToLayout()">도면에 후드 배치하기</button>
+            <div style="display: flex; gap: 5px;">
+                <button type="button" class="btn-draw" onclick="toggleDrawMode()" id="drawBtn" style="flex: 2;">도면 그리기: OFF</button>
+                <button type="button" class="btn-draw" style="background:#f39c12; flex: 1.2;" onclick="undoLastLine()" title="단축키: Ctrl+Z">↩ 되돌리기</button>
+                <button type="button" class="btn-draw" style="background:#e74c3c; flex: 1;" onclick="clearCanvas()">초기화</button>
+            </div>
+            
+            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
+            <button type="button" class="btn-iot" id="iotBtn" onclick="toggleIoTMode()">📡 IoT 실시간 모니터링 시작</button>
+
+            <div class="status-list" id="statusList"><strong>현장 모니터링 목록</strong></div>
+            <div class="copyright-sidebar">ⓒ 2026 AI 스마트 안전기술 | <strong>2022582@kiha.or.kr</strong></div>
+        </div>
+
+        <div class="main-content panel">
+            <div id="printTitle">국소배기장치 관제 보고서</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+                <h3 id="modeIndicator" style="margin: 0;">현장 레이아웃 (Layout)</h3>
+                <span id="iotStatus" style="font-size:12px; color:var(--iot-color); font-weight:bold; display:none;">● 실시간 센서 연동 중...</span>
+            </div>
+            <div class="layout-container" id="layoutContainer">
+                <canvas id="drawingCanvas"></canvas>
+                <div class="map-legend">
+                    <strong>📌 후드 범례</strong><br>
+                    <span style="display:inline-block; width:10px; height:10px; background:#2c3e50; margin-right:3px;"></span> 포위식<br>
+                    <span style="display:inline-block; width:10px; height:10px; background:#2c3e50; border-radius:50%; margin-right:3px;"></span> 부스식<br>
+                    <span style="display:inline-block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:11px solid #2c3e50; margin-right:2px; transform:translateY(2px);"></span> 외부식
+                </div>
+            </div>
+            <table class="print-table" id="printTable">
+                <thead><tr><th style="width:10%;">ID</th><th style="width:25%;">공정명</th><th style="width:15%;">상태</th><th style="width:20%;">후드형태</th><th style="width:10%;">법적</th><th style="width:10%;">측정</th><th style="width:10%;">판정</th></tr></thead>
+                <tbody id="printBody"></tbody>
+            </table>
+            <div class="copyright-print">ⓒ 2026 AI 현장안전 관제 대시보드 | 문의: 2022582@kiha.or.kr</div>
+        </div>
+    </div>
+
+    <div id="tab-confined" class="tab-content">
+        <div class="sidebar panel">
+            <h3 style="margin-top:0;">밀폐공간 정보 입력</h3>
+            <div class="form-group"><label>1. 형태 선택</label>
+                <select id="spaceType" onchange="toggleSpaceInputs()">
+                    <option value="rect">사각형 (직사각형)</option><option value="cyl">원통형</option><option value="comb">결합형 (사각형 + 원통형)</option>
+                </select>
+            </div>
+            <div id="input-rect" class="input-section active">
+                <label style="color:var(--primary-color);">■ 사각형 규격</label>
+                <div class="form-group"><label>폭(W) [m]</label><input type="number" id="rectW"></div>
+                <div class="form-group"><label>길이(L) [m]</label><input type="number" id="rectL"></div>
+                <div class="form-group"><label>높이(H) [m]</label><input type="number" id="rectH"></div>
+            </div>
+            <div id="input-cyl" class="input-section">
+                <label style="color:var(--primary-color);">● 원통형 규격</label>
+                <div class="form-group"><label>직경(D) [m]</label><input type="number" id="cylD"></div>
+                <div class="form-group"><label>높이(H) [m]</label><input type="number" id="cylH"></div>
+            </div>
+            <button type="button" onclick="calculateConfinedSpace()" style="background-color: var(--kosha-blue);">안전 급기량 계산</button>
+            <div class="copyright-sidebar" style="margin-top:auto;">ⓒ 2026 AI 스마트 안전기술 | <strong>2022582@kiha.or.kr</strong></div>
+        </div>
+
+        <div class="main-content panel">
+            <h2 style="text-align: center; margin-top: 0;">[KOSHA Guide] 밀폐공간 급기 방안</h2>
+            <div class="result-container">
+                <div class="guide-box">
+                    <h3 class="guide-title">1. 산출 결과</h3>
+                    <p style="font-size: 16px;">총 밀폐공간 체적:<br><span id="resVolume" class="result-highlight" style="color:#2c3e50;">0.00</span> <span style="font-size:16px;">m³</span></p>
+                    <p style="font-size: 16px;">필요 송풍기 용량 (Q):<br><span id="resFanCap" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min 이상</span></p>
+                    <p style="font-size:12px; color:#666;">* 계산식: 체적(m³) × 0.4 (ACH 20회, 효율 80% 적용)</p>
+                </div>
+                <div class="guide-box">
+                    <h3 class="guide-title">2. 송풍기 설치 기준</h3>
+                    <ul class="info-list">
+                        <li><strong>환기팬 정압:</strong> 최소 <span style="color:var(--danger-color); font-weight:bold;">40mmAq 이상</span></li>
+                        <li><strong>송풍관(덕트) 길이:</strong> 15m 이하 유지</li>
+                        <li>배기구와 급기구 이격으로 단락 방지</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="guide-box">
+                <h3 class="guide-title">3. 급기 시간 및 수칙</h3>
+                <ul class="info-list">
+                    <li><strong>작업 전:</strong> 출입 전 <span style="color:var(--danger-color); font-weight:bold;">30분간 급기</span> 실시</li>
+                    <li><strong>작업 중:</strong> 출입 후 <span style="color:var(--danger-color); font-weight:bold;">종료 시까지 계속 급기</span></li>
+                    <li><strong>주의사항:</strong> 유해가스 급변 시 <strong>송기 마스크</strong> 필수 착용.</li>
+                </ul>
+            </div>
+            <div class="copyright-print">ⓒ 2026 AI 현장안전 관제 대시보드 | 문의: 2022582@kiha.or.kr</div>
+        </div>
+    </div>
+
+    <div id="tab-fire" class="tab-content">
+        <div class="sidebar panel">
+            <h3 style="margin-top:0; color:var(--fire-red);">🔥 화재·폭발방지 정보 입력</h3>
+            <div class="form-group" style="background:#fdf6f2; padding:10px; border-radius:6px; border:1px solid #f5b041;">
+                <label style="color:var(--fire-red);">💡 1. 스마트 화학물질 DB 로드</label>
+                <select id="smartChemical" onchange="loadChemicalData()" style="border-color:#f5b041;">
+                    <option value="">-- 직접 입력 모드 --</option>
+                    <option value="toluene">톨루엔 (Toluene)</option>
+                    <option value="xylene">크실렌 (Xylene)</option>
+                    <option value="mek">메틸에틸케톤 (MEK)</option>
+                    <option value="ipa">이소프로필알코올 (IPA)</option>
+                    <option value="hydrogen">수소 (Hydrogen)</option>
+                </select>
+                <span class="unit-label" style="display:block; margin-top:4px;">* 선택 시 비중, 분자량, LEL 자동 입력</span>
+            </div>
+            <div class="form-group"><label>2. 물질의 비중 (S)</label><input type="number" id="fireS" step="0.01"></div>
+            <div class="form-group"><label>3. 인화물질 사용량 (W) <span class="unit-label">[L/min]</span></label><input type="number" id="fireW" step="0.1" value="2.5"></div>
+            <div class="form-group"><label>4. 안전계수 (C)</label><input type="number" id="fireC" value="4" step="1"></div>
+            <div class="form-group"><label>5. 물질의 분자량 (MW)</label><input type="number" id="fireMW" step="0.1"></div>
+            <div class="form-group"><label>6. 폭발 농도 하한치 (LEL) <span class="unit-label">[%]</span></label><input type="number" id="fireLEL" step="0.1"></div>
+            <div class="form-group"><label>7. 실제 작업장 온도 (t) <span class="unit-label">[℃]</span></label><input type="number" id="fireT" value="21" step="1"></div>
+
+            <button type="button" class="btn-fire" onclick="calculateFireVentilation()">전체환기량 계산하기</button>
+            <div class="copyright-sidebar" style="margin-top:auto;">ⓒ 2026 AI 스마트 안전기술 | <strong>2022582@kiha.or.kr</strong></div>
+        </div>
+
+        <div class="main-content panel">
+            <h2 style="text-align: center; margin-top: 0; color: #333;">화재 및 폭발 방지를 위한 전체환기량 산출</h2>
+            <div class="result-container">
+                <div class="guide-box fire-box">
+                    <h3 class="guide-title fire-title">1. 표준 상태 환기량 (Q)</h3>
+                    <p style="font-size: 16px;">21℃ 표준공기 기준:<br><span id="resFireQ" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min</span></p>
+                    <div class="formula-box"><div class="formula-img">Q = (24.1 × S × W × C × 10²) / (MW × LEL × B)</div></div>
+                    <ul class="info-list" style="margin-top:10px; font-size:12px; color:#555;">
+                        <li><strong>보정상수(B):</strong> <span id="resFireB" style="font-weight:bold; color:var(--fire-red);">1.0</span></li>
+                    </ul>
+                </div>
+                <div class="guide-box fire-box" style="background-color: #fff4e6; border-color: #e67e22;">
+                    <h3 class="guide-title fire-title" style="border-bottom-color: #e67e22; color: #e67e22;">2. 실제 운전 상태 환기량 (Qa)</h3>
+                    <p style="font-size: 16px;">작업장 온도(t) 보정 환기량:<br><span id="resFireQa" class="result-highlight" style="color: #d35400;">0.00</span> <span style="font-size:16px;">m³/min</span></p>
+                    <div class="formula-box" style="border-color: #fbdca2;"><div class="formula-img" style="color: #d35400;">Qa = Q × { (273 + t) / (273 + 21) }</div></div>
+                </div>
+            </div>
+            <div class="guide-box">
+                <h3 class="guide-title">기호 설명</h3>
+                <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+                    <tr style="border-bottom: 1px solid #ddd;"><th style="padding:5px;">S</th><td>비중</td><th style="padding:5px;">MW</th><td>분자량</td></tr>
+                    <tr style="border-bottom: 1px solid #ddd;"><th style="padding:5px;">W</th><td>사용량(L/min)</td><th style="padding:5px;">LEL</th><td>폭발하한치(%)</td></tr>
+                </table>
+            </div>
+            <div class="copyright-print">ⓒ 2026 AI 현장안전 관제 대시보드 | 문의: 2022582@kiha.or.kr</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 글로벌 변수 및 초기화 (로컬 스토리지 포함)
+        // ==========================================
+        let isDrawingMode = false, isDrawing = false;
+        let startX, startY;
+        let lines = [], hoodData = [];
+        const SNAP_RADIUS = 20;
+        const ALIGN_RADIUS = 10;
+        let iotInterval = null; 
+
+        window.onload = function() {
+            const savedLines = localStorage.getItem('smartVent_lines');
+            const savedHoods = localStorage.getItem('smartVent_hoods');
+            if(savedLines) lines = JSON.parse(savedLines);
+            if(savedHoods) {
+                hoodData = JSON.parse(savedHoods);
+                rebuildHoodMarkers();
+                updateStatusList();
+            }
+            setTimeout(resizeCanvas, 100);
+        };
+
+        function saveDataLocal() {
+            localStorage.setItem('smartVent_lines', JSON.stringify(lines));
+            localStorage.setItem('smartVent_hoods', JSON.stringify(hoodData));
+        }
+
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            if(e && e.currentTarget) e.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            if(tabId === 'tab-exhaust') { setTimeout(resizeCanvas, 100); }
+        }
+
+        // ==========================================
+        // [탭 1] 국소배기장치 (도면 엔진 및 Undo)
+        // ==========================================
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('layoutContainer');
+
+        document.getElementById('factoryName').addEventListener('input', function() {
+            const printTitle = document.getElementById('printTitle');
+            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 보고서" : `[${this.value}] 국소배기장치 관제 보고서`;
+        });
+
+        function resizeCanvas() {
+            if(document.getElementById('tab-exhaust').classList.contains('active')) {
+                canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+                redrawCanvas(); 
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        const velocityMap = {
+            gaseous: { enclosed: 0.4, booth: 0.4, lateral: 0.5, downward: 0.5, upward: 1.0 },
+            particulate: { enclosed: 0.7, booth: 0.7, lateral: 1.0, downward: 1.0, upward: 1.2 }
+        };
+
+        function updateLegalVelocity() {
+            const state = document.querySelector('input[name="state"]:checked').value;
+            const type = document.getElementById('hoodType').value;
+            document.getElementById('legalVelocity').value = velocityMap[state][type].toFixed(1);
+        }
+        updateLegalVelocity();
+
+        function toggleDrawMode() {
+            isDrawingMode = !isDrawingMode;
+            document.getElementById('drawBtn').innerText = `도면 그리기: ${isDrawingMode ? 'ON' : 'OFF'}`;
+            document.getElementById('modeIndicator').innerText = isDrawingMode ? "국소배기 배치도" : "현장 레이아웃 (Layout)";
+            isDrawingMode ? canvas.classList.add('canvas-drawing') : canvas.classList.remove('canvas-drawing');
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            lines.forEach(line => { ctx.beginPath(); ctx.moveTo(line.x1, line.y1); ctx.lineTo(line.x2, line.y2); ctx.stroke(); });
+        }
+
+        function getSnappedPoint(x, y) {
+            let sx = x, sy = y, min = SNAP_RADIUS;
+            for (let line of lines) {
+                const pts = [{x: line.x1, y: line.y1}, {x: line.x2, y: line.y2}];
+                for (let pt of pts) {
+                    const dist = Math.sqrt(Math.pow(pt.x - x, 2) + Math.pow(pt.y - y, 2));
+                    if (dist < min) { min = dist; sx = pt.x; sy = pt.y; }
+                }
+            }
+            return { x: sx, y: sy };
+        }
+
+        function undoLastLine() {
+            if (lines.length > 0) { lines.pop(); saveDataLocal(); redrawCanvas(); }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && (event.key === 'z' || event.key === 'Z')) {
+                if (document.getElementById('tab-exhaust').classList.contains('active') && document.activeElement.tagName !== 'INPUT') {
+                    undoLastLine();
+                }
+            }
+        });
+
+        function clearCanvas() { 
+            lines = []; hoodData = []; container.querySelectorAll('.hood-marker').forEach(e => e.remove());
+            saveDataLocal(); redrawCanvas(); updateStatusList(); 
+        }
+
+        function startPosition(e) { 
+            if (!isDrawingMode) return; isDrawing = true; 
+            const rect = canvas.getBoundingClientRect(); 
+            let rawX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; 
+            let rawY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top; 
+            const snapped = getSnappedPoint(rawX, rawY); startX = snapped.x; startY = snapped.y; 
+        }
+        
+        function drawLine(e) { 
+            if (!isDrawing) return; e.preventDefault(); 
+            const rect = canvas.getBoundingClientRect(); 
+            let rawX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; 
+            let rawY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top; 
+            let diffX = Math.abs(rawX - startX), diffY = Math.abs(rawY - startY); 
+            if (diffX > diffY * 2.5) rawY = startY; else if (diffY > diffX * 2.5) rawX = startX; 
+            
+            let cx = rawX, cy = rawY; let alignGuides = [];
+            for (let line of lines) {
+                const pts = [ {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2} ];
+                for (let pt of pts) {
+                    if (pt.x === startX && pt.y === startY) continue;
+                    if (Math.abs(cx - pt.x) < ALIGN_RADIUS) { cx = pt.x; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
+                    if (Math.abs(cy - pt.y) < ALIGN_RADIUS) { cy = pt.y; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
+                }
+            }
+            const snapped = getSnappedPoint(cx, cy); 
+            if (snapped.x !== cx || snapped.y !== cy) { cx = snapped.x; cy = snapped.y; alignGuides = []; }
+            
+            redrawCanvas(); 
+            
+            if (alignGuides.length > 0) {
+                ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 1.5; ctx.strokeStyle = '#f39c12';
+                ctx.beginPath(); for (let g of alignGuides) { ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); }
+                ctx.stroke(); ctx.restore();
+            }
+            if (cx !== rawX || cy !== rawY) { ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fillStyle = '#e74c3c'; ctx.fill(); } 
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(cx, cy); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 3; ctx.stroke(); 
+        }
+        
+        function stopPosition(e) { 
+            if (!isDrawing) return; isDrawing = false; 
+            const rect = canvas.getBoundingClientRect(); 
+            let rawX = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - rect.left; 
+            let rawY = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - rect.top; 
+            let diffX = Math.abs(rawX - startX), diffY = Math.abs(rawY - startY); 
+            if (diffX > diffY * 2.5) rawY = startY; else if (diffY > diffX * 2.5) rawX = startX; 
+            
+            let cx = rawX, cy = rawY;
+            for (let line of lines) {
+                const pts = [ {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2} ];
+                for (let pt of pts) {
+                    if (pt.x === startX && pt.y === startY) continue;
+                    if (Math.abs(cx - pt.x) < ALIGN_RADIUS) cx = pt.x;
+                    if (Math.abs(cy - pt.y) < ALIGN_RADIUS) cy = pt.y;
+                }
+            }
+            const snapped = getSnappedPoint(cx, cy); let ex = snapped.x, ey = snapped.y; 
+            if (Math.abs(ex - startX) > 5 || Math.abs(ey - startY) > 5) { lines.push({ x1: startX, y1: startY, x2: ex, y2: ey }); saveDataLocal(); } 
+            redrawCanvas(); 
+        }
+        
+        canvas.addEventListener('mousedown', startPosition); canvas.addEventListener('mousemove', drawLine); canvas.addEventListener('mouseup', stopPosition); canvas.addEventListener('mouseleave', stopPosition);
+        canvas.addEventListener('touchstart', startPosition, {passive: false}); canvas.addEventListener('touchmove', drawLine, {passive: false}); canvas.addEventListener('touchend', stopPosition);
+
+        // ==========================================
+        // 🚀 [도형 매핑 마커 생성 및 배치]
+        // ==========================================
+        function createMarkerElement(data) {
+            const marker = document.createElement('div');
+            
+            // 후드 타입에 따른 도형 클래스 할당
+            let shapeClass = 'shape-square'; // 기본 포위식 (네모)
+            if (data.type.includes('외부식')) shapeClass = 'shape-triangle'; // 세모
+            else if (data.type.includes('부스식')) shapeClass = 'shape-circle'; // 원형
+
+            marker.className = `hood-marker ${shapeClass}`;
+            marker.id = `marker-${data.id}`;
+            marker.style.backgroundColor = data.result === '양호' ? '#3498db' : '#e74c3c';
+            if(data.result !== '양호') marker.classList.add('marker-danger');
+            
+            marker.style.left = data.posX || '45%'; 
+            marker.style.top = data.posY || '45%';
+            marker.innerText = `H${data.id}`; 
+            marker.title = `[${data.process}] 측정: ${data.measured}m/s`;
+            
+            function addDragLogic(el) {
+                el.onmousedown = function(e) {
+                    if(isDrawingMode) return;
+                    e.preventDefault();
+                    let sX = e.clientX - el.getBoundingClientRect().left; 
+                    let sY = e.clientY - el.getBoundingClientRect().top;
+                    
+                    function moveAt(px, py) { 
+                        const contRect = container.getBoundingClientRect();
+                        let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
+                        if(newL < 0) newL = 0; if(newT < 0) newT = 0;
+                        if(newL + el.offsetWidth > contRect.width) newL = contRect.width - el.offsetWidth;
+                        if(newT + el.offsetHeight > contRect.height) newT = contRect.height - el.offsetHeight;
+                        el.style.left = newL + 'px'; el.style.top = newT + 'px'; 
+                    }
+                    function onMM(e) { moveAt(e.clientX, e.clientY); }
+                    function onMU() { 
+                        document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); 
+                        data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
+                    }
+                    document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU); 
+                };
+                
+                el.ontouchstart = function(e) {
+                    if(isDrawingMode) return;
+                    const touch = e.touches[0];
+                    let sX = touch.clientX - el.getBoundingClientRect().left; let sY = touch.clientY - el.getBoundingClientRect().top;
+                    function moveAt(px, py) { 
+                        const contRect = container.getBoundingClientRect();
+                        let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
+                        if(newL < 0) newL = 0; if(newT < 0) newT = 0;
+                        if(newL + el.offsetWidth > contRect.width) newL = contRect.width - el.offsetWidth;
+                        if(newT + el.offsetHeight > contRect.height) newT = contRect.height - el.offsetHeight;
+                        el.style.left = newL + 'px'; el.style.top = newT + 'px'; 
+                    }
+                    function onTM(e) { e.preventDefault(); moveAt(e.touches[0].clientX, e.touches[0].clientY); }
+                    function onTE() { 
+                        document.removeEventListener('touchmove', onTM); document.removeEventListener('touchend', onTE); 
+                        data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
+                    }
+                    document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE); 
+                };
+            }
+            addDragLogic(marker); 
+            container.appendChild(marker);
+        }
+
+        function rebuildHoodMarkers() {
+            container.querySelectorAll('.hood-marker').forEach(e => e.remove());
+            hoodData.forEach(data => createMarkerElement(data));
+        }
+
+        function addHoodToLayout() {
+            try {
+                const processName = document.getElementById('processName').value;
+                const measured = document.getElementById('measuredVelocity').value;
+                if (!processName) { alert("공정명을 입력해주세요."); return; }
+                if (!measured) { alert("측정 유속을 입력해주세요."); return; }
+
+                const state = document.querySelector('input[name="state"]:checked').value;
+                const typeSelect = document.getElementById('hoodType');
+                const legal = parseFloat(document.getElementById('legalVelocity').value);
+                const mVal = parseFloat(measured);
+                const isGood = mVal >= legal;
+
+                const data = {
+                    id: hoodData.length > 0 ? Math.max(...hoodData.map(h=>h.id)) + 1 : 1, 
+                    process: processName, state: state === 'gaseous' ? '가스상' : '입자상',
+                    type: typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0], // (네모) 등 글자 제거
+                    legal: legal, measured: mVal.toFixed(2), result: isGood ? '양호' : '미흡',
+                    posX: '45%', posY: '45%'
+                };
+                hoodData.push(data);
+                createMarkerElement(data);
+                updateStatusList();
+                saveDataLocal();
+                
+                document.getElementById('processName').value = ''; document.getElementById('measuredVelocity').value = '';
+            } catch(e) { alert("배치 오류: " + e.message); }
+        }
+
+        function updateStatusList() {
+            const list = document.getElementById('statusList'); const printBody = document.getElementById('printBody');
+            list.innerHTML = '<strong>현장 모니터링 목록</strong>'; printBody.innerHTML = '';
+            hoodData.forEach(h => {
+                const card = document.createElement('div'); card.className = 'status-card'; card.id = `card-${h.id}`;
+                card.style.borderLeftColor = h.result === '양호' ? '#3498db' : '#e74c3c';
+                card.innerHTML = `[H${h.id}] <strong>${h.process}</strong> / ${h.type} <br> <span style="font-size:11px;color:#888;">법적기준: ${h.legal}m/s</span><br> <b>현재측정: <span id="val-${h.id}">${h.measured}</span>m/s</b> -> <b id="res-${h.id}" style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</b>`;
+                list.appendChild(card);
+                const tr = `<tr><td>${h.id}</td><td>${h.process}</td><td>${h.state}</td><td>${h.type}</td><td>${h.legal}</td><td id="pt-val-${h.id}">${h.measured}</td><td id="pt-res-${h.id}"><strong style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</strong></td></tr>`;
+                printBody.innerHTML += tr;
+            });
+        }
+
+        // 실시간 IoT 시뮬레이션
+        function toggleIoTMode() {
+            const btn = document.getElementById('iotBtn'); const status = document.getElementById('iotStatus');
+            if (iotInterval) {
+                clearInterval(iotInterval); iotInterval = null;
+                btn.innerHTML = "📡 IoT 실시간 모니터링 시작"; btn.style.background = "var(--iot-color)"; status.style.display = "none";
+            } else {
+                if(hoodData.length === 0) { alert("연동할 후드를 배치해주세요."); return; }
+                btn.innerHTML = "🛑 IoT 실시간 모니터링 중지"; btn.style.background = "#e74c3c"; status.style.display = "block";
+                iotInterval = setInterval(() => {
+                    hoodData.forEach(h => {
+                        let change = (Math.random() * 0.1) - 0.05; let newVal = Math.max(0.1, parseFloat(h.measured) + change);
+                        h.measured = newVal.toFixed(2); h.result = newVal >= parseFloat(h.legal) ? '양호' : '미흡(경고)';
+                        const marker = document.getElementById(`marker-${h.id}`); const valSpan = document.getElementById(`val-${h.id}`); const resSpan = document.getElementById(`res-${h.id}`); const card = document.getElementById(`card-${h.id}`);
+                        if(marker && valSpan) {
+                            marker.title = `[${h.process}] 측정: ${h.measured}m/s`; valSpan.innerText = h.measured; resSpan.innerText = h.result;
+                            if(h.result.includes('미흡')) { marker.style.backgroundColor = '#e74c3c'; marker.classList.add('marker-danger'); card.style.borderLeftColor = '#e74c3c'; resSpan.style.color = '#e74c3c'; } 
+                            else { marker.style.backgroundColor = '#3498db'; marker.classList.remove('marker-danger'); card.style.borderLeftColor = '#3498db'; resSpan.style.color = '#3498db'; }
+                        }
+                    });
+                }, 1500);
+            }
+        }
+
+        // ==========================================
+        // [탭 2] 밀폐공간 & [탭 3] 화재폭발 (유지)
+        // ==========================================
+        function toggleSpaceInputs() {
+            const type = document.getElementById('spaceType').value;
+            document.getElementById('input-rect').classList.remove('active'); document.getElementById('input-cyl').classList.remove('active');
+            if (type === 'rect') document.getElementById('input-rect').classList.add('active');
+            else if (type === 'cyl') document.getElementById('input-cyl').classList.add('active');
+            else if (type === 'comb') { document.getElementById('input-rect').classList.add('active'); document.getElementById('input-cyl').classList.add('active'); }
+        }
+        function calculateConfinedSpace() {
+            const type = document.getElementById('spaceType').value; let totalVolume = 0;
+            const calcRect = () => (parseFloat(document.getElementById('rectW').value)||0) * (parseFloat(document.getElementById('rectL').value)||0) * (parseFloat(document.getElementById('rectH').value)||0);
+            const calcCyl = () => (3.14 * Math.pow((parseFloat(document.getElementById('cylD').value)||0), 2) / 4) * (parseFloat(document.getElementById('cylH').value)||0);
+            if (type === 'rect') totalVolume = calcRect(); else if (type === 'cyl') totalVolume = calcCyl(); else if (type === 'comb') totalVolume = calcRect() + calcCyl();
+            if (totalVolume <= 0) { alert("규격을 입력해 주세요."); return; }
+            document.getElementById('resVolume').innerText = totalVolume.toFixed(2); document.getElementById('resFanCap').innerText = (totalVolume * 0.4).toFixed(2);
+        }
+
+        const chemDB = { "toluene": { s: 0.87, mw: 92.14, lel: 1.1 }, "xylene": { s: 0.86, mw: 106.16, lel: 1.0 }, "mek": { s: 0.81, mw: 72.11, lel: 1.4 }, "ipa": { s: 0.79, mw: 60.10, lel: 2.0 }, "hydrogen":{ s: 0.07, mw: 2.02, lel: 4.0 } };
+        function loadChemicalData() {
+            const sel = document.getElementById('smartChemical').value;
+            if(sel && chemDB[sel]) {
+                document.getElementById('fireS').value = chemDB[sel].s; document.getElementById('fireMW').value = chemDB[sel].mw; document.getElementById('fireLEL').value = chemDB[sel].lel;
+                ['fireS','fireMW','fireLEL'].forEach(id => { document.getElementById(id).style.backgroundColor = '#e8f8f5'; setTimeout(() => document.getElementById(id).style.backgroundColor = '', 1000); });
+            }
+        }
+        function calculateFireVentilation() {
+            const S = parseFloat(document.getElementById('fireS').value)||0, W = parseFloat(document.getElementById('fireW').value)||0, C = parseFloat(document.getElementById('fireC').value)||4;
+            const MW = parseFloat(document.getElementById('fireMW').value)||0, LEL = parseFloat(document.getElementById('fireLEL').value)||0, t = parseFloat(document.getElementById('fireT').value);
+            if(S===0||W===0||MW===0||LEL===0||isNaN(t)) { alert("정확히 입력해 주세요."); return; }
+            const B = (t >= 120) ? 0.7 : 1.0; document.getElementById('resFireB').innerText = B.toFixed(1);
+            const Q = (24.1 * S * W * C * 100) / (MW * LEL * B); const Qa = Q * ((273 + t) / (273 + 21));
+            document.getElementById('resFireQ').innerText = Q.toFixed(2); document.getElementById('resFireQa').innerText = Qa.toFixed(2);
+        }
+    </script>
+</body>
+</html>
