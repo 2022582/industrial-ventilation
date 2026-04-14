@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 현장 안전 자가진단 시스템</title>
     <style>
-        /* 모든 요소 박스 사이징 통일 (잘림 방지 핵심) */
+        /* 🚀 [수정] 모든 요소의 크기 계산을 테두리 포함으로 통일하여 인쇄 시 잘림 원천 차단 */
         * { box-sizing: border-box; }
         
         :root { --primary-color: #2c3e50; --accent-color: #3498db; --danger-color: #e74c3c; --success-color: #27ae60; --kosha-blue: #4a90e2; --fire-red: #d35400; --iot-color: #9b59b6; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #ecf0f1; margin: 0; padding: 10px; overflow-x: hidden; }
+        
         .header { background: var(--primary-color); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .title-area { display: flex; align-items: center; gap: 10px; }
         .smart-badge { background-color: var(--danger-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; animation: pulse 2s infinite; }
         
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes blink-red { 
-            0% { background-color: #e74c3c; } 
-            50% { background-color: #900C3F; filter: drop-shadow(0 0 10px #e74c3c); box-shadow: 0 0 10px #e74c3c; } 
-            100% { background-color: #e74c3c; } 
-        }
+        @keyframes blink-red { 0% { background-color: #e74c3c; } 50% { background-color: #900C3F; filter: drop-shadow(0 0 10px #e74c3c); box-shadow: 0 0 10px #e74c3c; } 100% { background-color: #e74c3c; } }
 
         .tabs { display: flex; margin-bottom: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
         .tab-btn { flex: 1; min-width: 100px; padding: 15px 5px; text-align: center; cursor: pointer; font-weight: bold; background: #ecf0f1; border: none; outline: none; transition: 0.3s; font-size: 14px; color: #555; }
@@ -36,9 +33,11 @@
         .main-content { order: 1; position: relative; width: 100%; }
         @media (min-width: 768px) { .sidebar { width: 350px; flex-shrink: 0; order: 1; } .main-content { flex: 1; min-width: 0; order: 2; } }
         
-        /* --- 🚀 완벽한 도면 비율(Aspect Ratio) 설정 --- */
+        /* --- 🚀 [핵심 수정] 완벽한 도면 비율(Aspect Ratio) 강제 고정 --- */
+        /* 화면이든 인쇄든 무조건 1.5:1 (가로:세로) 비율을 유지하여 마커와 선이 어긋나지 않게 합니다. */
         .layout-container { 
-            position: relative; width: 100%; aspect-ratio: 16 / 9; height: auto; min-height: 300px;
+            position: relative; width: 100%; 
+            aspect-ratio: 1.5; /* 절대 비율 고정 */
             background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; 
             overflow: hidden; touch-action: none; 
             background-image: radial-gradient(#e0e0e0 1px, transparent 1px); background-size: 20px 20px; 
@@ -46,6 +45,7 @@
         canvas { position: absolute; top: 0; left: 0; z-index: 1; width: 100%; height: 100%; }
         .canvas-drawing { cursor: crosshair; }
         
+        /* 마커 디자인 */
         .hood-marker { position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; cursor: move; display: flex; justify-content: center; transform: translate(-50%, -50%); }
         .shape-square { border-radius: 4px; width: 40px; height: 40px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .shape-circle { border-radius: 50%; width: 44px; height: 44px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
@@ -56,6 +56,7 @@
         .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px; }
         .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; transition: 0.3s; }
 
+        /* 2, 3탭 스타일 */
         .result-container { display: flex; gap: 15px; flex-wrap: wrap; }
         .guide-box { border: 2px solid var(--kosha-blue); border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f4f8fd; flex: 1; min-width: 250px; }
         .guide-box.fire-box { border-color: var(--fire-red); background: #fdf6f2; }
@@ -68,6 +69,7 @@
         .formula-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-top: 10px; text-align: center; overflow-x: auto; }
         .formula-img { color: var(--danger-color); font-weight: bold; font-size: 18px; letter-spacing: 1px; }
 
+        /* 폼 스타일 */
         .form-group { margin-bottom: 12px; width: 100%; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
         .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
@@ -82,31 +84,43 @@
         .copyright-sidebar { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #7f8c8d; }
 
         /* =========================================================
-           A4 출력(인쇄) 전용 규격 설정 (16:9 비율 유지하여 잘림 완벽 방지)
+           🚀 A4 출력(인쇄) 전용 규격 설정 (잘림 및 틀어짐 완벽 방지)
            ========================================================= */
         @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body { background: white; margin: 0; padding: 0; font-size: 11pt; max-width: 100vw; overflow-x: hidden; }
-            .sidebar, .tabs, button, .header button { display: none !important; }
-            .tab-content { display: none !important; } .tab-content.active { display: block !important; width: 100%; }
-            .main-content { width: 100%; box-shadow: none; border: none; padding: 0; display: block !important; }
+            @page { size: A4 portrait; margin: 15mm 10mm; } 
+            body { background: white; margin: 0; padding: 0; font-size: 11pt; max-width: 100%; }
             
-            /* 핵심: 인쇄 시에도 비율을 16:9로 유지하여 찌그러짐 방지 */
-            .layout-container { border: 2px solid #000; width: 100% !important; height: auto !important; aspect-ratio: 16 / 9; page-break-inside: avoid; margin-bottom: 15px; background-image: none; }
-            .map-legend { display: none !important; } 
+            /* 불필요한 웹 UI 숨김 (공간 확보) */
+            .header, .sidebar, .tabs, button, .map-legend { display: none !important; }
+            
+            /* 탭 강제 정렬 */
+            .tab-content { display: none !important; }
+            .tab-content.active { display: block !important; width: 100%; }
+            .main-content { width: 100%; padding: 0; display: block !important; }
+            
+            /* 핵심: 인쇄 시에도 비율을 1.5로 강제하여 찌그러짐 원천 방지 */
+            .layout-container { 
+                border: 2px solid #000; width: 100% !important; 
+                aspect-ratio: 1.5 !important; height: auto !important; 
+                page-break-inside: avoid; margin-bottom: 15px; background-image: none; 
+            }
+            canvas { width: 100% !important; height: 100% !important; } 
             
             #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15px; font-weight: bold; color: black; }
             
-            /* 짤림 방지를 위한 반응형 표 */
-            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt; table-layout: fixed; word-break: keep-all; }
-            .print-table tr { page-break-inside: avoid; page-break-after: auto; } .print-table th { background-color: #f2f2f2 !important; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 4px; text-align: center; overflow: hidden; }
+            /* 짤림 방지를 위한 반응형 표 (글자 줄바꿈 강제) */
+            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt; table-layout: fixed; }
+            .print-table tr { page-break-inside: avoid; page-break-after: auto; }
+            .print-table th { background-color: #f2f2f2 !important; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; word-break: keep-all; overflow-wrap: break-word; }
             
-            .result-container { display: block !important; }
-            .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; box-sizing: border-box; display: block; }
+            .result-container { display: block !important; } 
+            .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; display: block; }
             .guide-title { color: black; border-bottom: 2px solid #000; font-size: 14pt; padding-bottom: 5px; }
             .result-highlight { color: black; font-size: 16pt; }
+
             .copyright-print { display: block; margin-top: 20px; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
+            
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
         .print-table, #printTitle, .copyright-print { display: none; }
@@ -166,11 +180,12 @@
         </div>
 
         <div class="main-content panel">
-            <div id="printTitle">국소배기장치 관제 보고서</div>
+            <div id="printTitle">국소배기장치 자체 점검 보고서</div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
                 <h3 id="modeIndicator" style="margin: 0;">현장 레이아웃 (Layout)</h3>
                 <span id="iotStatus" style="font-size:12px; color:var(--iot-color); font-weight:bold; display:none;">● 실시간 센서 연동 중...</span>
             </div>
+            
             <div class="layout-container" id="layoutContainer">
                 <canvas id="drawingCanvas"></canvas>
                 <div class="map-legend">
@@ -180,6 +195,7 @@
                     <span style="display:inline-block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:11px solid #2c3e50; margin-right:2px; transform:translateY(2px);"></span> 외부식
                 </div>
             </div>
+            
             <table class="print-table" id="printTable">
                 <thead><tr><th style="width:10%;">ID</th><th style="width:25%;">공정명</th><th style="width:15%;">상태</th><th style="width:20%;">후드형태</th><th style="width:10%;">법적</th><th style="width:10%;">측정</th><th style="width:10%;">판정</th></tr></thead>
                 <tbody id="printBody"></tbody>
@@ -218,13 +234,13 @@
                     <h3 class="guide-title">1. 산출 결과</h3>
                     <p style="font-size: 16px;">총 밀폐공간 체적:<br><span id="resVolume" class="result-highlight" style="color:#2c3e50;">0.00</span> <span style="font-size:16px;">m³</span></p>
                     <p style="font-size: 16px;">필요 송풍기 용량 (Q):<br><span id="resFanCap" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min 이상</span></p>
-                    <p style="font-size:12px; color:#666; margin-bottom: 0;">* 계산식: 체적(m³) × 0.4 (ACH 20회, 효율 80% 적용)</p>
+                    <p style="font-size:12px; color:#666; margin-bottom: 0;">* 계산식: 밀폐공간 체적(m³) × 0.4 (ACH 20회, 효율 80% 기준)</p>
                 </div>
                 <div class="guide-box">
                     <h3 class="guide-title">2. 송풍기 설치 기준</h3>
                     <ul class="info-list">
                         <li><strong>환기팬 정압:</strong> 최소 <span style="color:var(--danger-color); font-weight:bold;">40mmAq 이상</span></li>
-                        <li><strong>송풍관(덕트) 길이:</strong> 15m 이하 유지</li>
+                        <li><strong>송풍관(덕트) 길이:</strong> 15m 이하 유지 (또는 제조사 기준)</li>
                         <li>배기구와 급기구 이격으로 단락 방지</li>
                     </ul>
                 </div>
@@ -273,7 +289,7 @@
             <div class="result-container">
                 <div class="guide-box fire-box">
                     <h3 class="guide-title fire-title">1. 표준 상태 환기량 (Q)</h3>
-                    <p style="font-size: 16px;">21℃ 표준공기 기준:<br><span id="resFireQ" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min</span></p>
+                    <p style="font-size: 16px; margin-bottom: 5px;">21℃ 표준공기 기준:<br><span id="resFireQ" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min</span></p>
                     <div class="formula-box"><div class="formula-img">Q = (24.1 × S × W × C × 10²) / (MW × LEL × B)</div></div>
                     <ul class="info-list" style="margin-top:10px; font-size:12px; color:#555;">
                         <li><strong>보정상수(B):</strong> <span id="resFireB" style="font-weight:bold; color:var(--fire-red);">1.0</span></li>
@@ -281,7 +297,7 @@
                 </div>
                 <div class="guide-box fire-box" style="background-color: #fff4e6; border-color: #e67e22;">
                     <h3 class="guide-title fire-title" style="border-bottom-color: #e67e22; color: #e67e22;">2. 실제 운전 상태 환기량 (Qa)</h3>
-                    <p style="font-size: 16px;">작업장 온도(t) 보정 환기량:<br><span id="resFireQa" class="result-highlight" style="color: #d35400;">0.00</span> <span style="font-size:16px;">m³/min</span></p>
+                    <p style="font-size: 16px; margin-bottom: 5px;">작업장 온도(t) 보정 환기량:<br><span id="resFireQa" class="result-highlight" style="color: #d35400;">0.00</span> <span style="font-size:16px;">m³/min</span></p>
                     <div class="formula-box" style="border-color: #fbdca2;"><div class="formula-img" style="color: #d35400;">Qa = Q × { (273 + t) / (273 + 21) }</div></div>
                 </div>
             </div>
@@ -298,7 +314,7 @@
 
     <script>
         // ==========================================
-        // 🚀 [핵심 수정 1] 좌표계 비율(%) 전환 (Responsive Coordinates)
+        // 🚀 [핵심 수정 1] 절대 비율 좌표계 (Responsive Ratio)
         // 화면 크기가 변하거나 인쇄할 때 캔버스 안의 선들이 완벽하게 위치를 유지합니다.
         // ==========================================
         let isDrawingMode = false, isDrawing = false;
@@ -309,17 +325,16 @@
         let iotInterval = null; 
 
         window.onload = function() {
-            const savedLines = localStorage.getItem('smartVent_lines_v2'); // 새 좌표계 보호
-            const savedHoods = localStorage.getItem('smartVent_hoods_v2');
+            const savedLines = localStorage.getItem('smartVent_lines_v3');
+            const savedHoods = localStorage.getItem('smartVent_hoods_v3');
             if(savedLines) { lines = JSON.parse(savedLines); }
             if(savedHoods) { hoodData = JSON.parse(savedHoods); rebuildHoodMarkers(); updateStatusList(); }
-            // 초기 캔버스 사이즈 설정
             setTimeout(resizeCanvas, 200);
         };
 
         function saveDataLocal() {
-            localStorage.setItem('smartVent_lines_v2', JSON.stringify(lines));
-            localStorage.setItem('smartVent_hoods_v2', JSON.stringify(hoodData));
+            localStorage.setItem('smartVent_lines_v3', JSON.stringify(lines));
+            localStorage.setItem('smartVent_hoods_v3', JSON.stringify(hoodData));
         }
 
         function switchTab(e, tabId) {
@@ -336,7 +351,7 @@
 
         document.getElementById('factoryName').addEventListener('input', function() {
             const printTitle = document.getElementById('printTitle');
-            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 보고서" : `[${this.value}] 국소배기장치 관제 보고서`;
+            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 보고서" : `[${this.value}] 국소배기장치 자체 점검 보고서`;
         });
 
         // 리사이즈 시 비율에 맞춰 선 다시 그리기
@@ -363,12 +378,11 @@
 
         function toggleDrawMode() {
             isDrawingMode = !isDrawingMode;
-            document.getElementById('drawBtn').innerText = `도면 그리기: ${isDrawingMode ? 'ON' : 'OFF'}`;
+            document.getElementById('drawBtn').innerText = `도면 그리기 모드: ${isDrawingMode ? 'ON' : 'OFF'}`;
             document.getElementById('modeIndicator').innerText = isDrawingMode ? "국소배기 배치도" : "현장 레이아웃 (Layout)";
             isDrawingMode ? canvas.classList.add('canvas-drawing') : canvas.classList.remove('canvas-drawing');
         }
 
-        // 선을 다시 그릴 때는 비율(0.0~1.0)을 실제 픽셀(canvas.width/height)로 곱해서 그립니다.
         function redrawCanvas() {
             if(!canvas.width || !canvas.height) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -477,7 +491,7 @@
             }
             const snapped = getSnappedPoint(cx, cy); let ex = snapped.x, ey = snapped.y; 
             
-            // 비율(%) 좌표로 저장 (핵심)
+            // 🚀 선을 절대좌표가 아닌 비율(%) 좌표로 저장하여 인쇄/리사이즈 완벽 대응
             if (Math.abs(ex - startX) > 5 || Math.abs(ey - startY) > 5) { 
                 lines.push({ 
                     x1: startX / canvas.width, 
@@ -494,7 +508,7 @@
         canvas.addEventListener('touchstart', startPosition, {passive: false}); canvas.addEventListener('touchmove', drawLine, {passive: false}); canvas.addEventListener('touchend', stopPosition);
 
         // ==========================================
-        // 🚀 [핵심 수정 2] 마커 드래그 위치를 %로 저장
+        // 🚀 [핵심 수정 2] 마커 드래그 위치를 %로 완벽 저장
         // ==========================================
         function createMarkerElement(data) {
             const marker = document.createElement('div');
@@ -514,55 +528,55 @@
             marker.title = `[${data.process}] 측정: ${data.measured}m/s`;
             
             function addDragLogic(el) {
-                el.onmousedown = function(e) {
+                let isDragging = false;
+                
+                const startDrag = (clientX, clientY) => {
                     if(isDrawingMode) return;
-                    e.preventDefault();
-                    let sX = e.clientX - el.getBoundingClientRect().left - el.offsetWidth/2; 
-                    let sY = e.clientY - el.getBoundingClientRect().top - el.offsetHeight/2;
+                    isDragging = true;
+                    const markerRect = el.getBoundingClientRect();
+                    const contRect = container.getBoundingClientRect();
+                    // 마커 정중앙 계산
+                    let markerCenterX = markerRect.left + markerRect.width / 2;
+                    let markerCenterY = markerRect.top + markerRect.height / 2;
+                    // 마우스와 중앙의 오프셋
+                    el.offsetX = clientX - markerCenterX;
+                    el.offsetY = clientY - markerCenterY;
+                };
+
+                const onDrag = (clientX, clientY) => {
+                    if(!isDragging) return;
+                    const contRect = container.getBoundingClientRect();
+                    let centerX = (clientX - el.offsetX) - contRect.left;
+                    let centerY = (clientY - el.offsetY) - contRect.top;
                     
-                    function moveAt(px, py) { 
-                        const contRect = container.getBoundingClientRect();
-                        let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
-                        // %로 변환하여 실시간 적용
-                        let leftPercent = (newL / contRect.width) * 100;
-                        let topPercent = (newT / contRect.height) * 100;
-                        
-                        if(leftPercent < 0) leftPercent = 0; if(topPercent < 0) topPercent = 0;
-                        if(leftPercent > 100) leftPercent = 100; if(topPercent > 100) topPercent = 100;
-                        
-                        el.style.left = leftPercent + '%'; el.style.top = topPercent + '%'; 
-                    }
-                    function onMM(e) { moveAt(e.clientX, e.clientY); }
-                    function onMU() { 
-                        document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); 
-                        data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
-                    }
-                    document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU); 
+                    let leftPercent = (centerX / contRect.width) * 100;
+                    let topPercent = (centerY / contRect.height) * 100;
+                    
+                    leftPercent = Math.max(0, Math.min(100, leftPercent));
+                    topPercent = Math.max(0, Math.min(100, topPercent));
+                    
+                    el.style.left = leftPercent + '%'; el.style.top = topPercent + '%';
+                };
+
+                const stopDrag = () => {
+                    if(!isDragging) return;
+                    isDragging = false;
+                    data.posX = el.style.left; data.posY = el.style.top;
+                    saveDataLocal();
+                };
+
+                el.onmousedown = (e) => {
+                    e.preventDefault(); startDrag(e.clientX, e.clientY);
+                    const onMM = (ev) => onDrag(ev.clientX, ev.clientY);
+                    const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); stopDrag(); };
+                    document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU);
                 };
                 
-                el.ontouchstart = function(e) {
-                    if(isDrawingMode) return;
-                    const touch = e.touches[0];
-                    let sX = touch.clientX - el.getBoundingClientRect().left - el.offsetWidth/2; 
-                    let sY = touch.clientY - el.getBoundingClientRect().top - el.offsetHeight/2;
-                    
-                    function moveAt(px, py) { 
-                        const contRect = container.getBoundingClientRect();
-                        let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
-                        let leftPercent = (newL / contRect.width) * 100;
-                        let topPercent = (newT / contRect.height) * 100;
-                        
-                        if(leftPercent < 0) leftPercent = 0; if(topPercent < 0) topPercent = 0;
-                        if(leftPercent > 100) leftPercent = 100; if(topPercent > 100) topPercent = 100;
-                        
-                        el.style.left = leftPercent + '%'; el.style.top = topPercent + '%'; 
-                    }
-                    function onTM(e) { e.preventDefault(); moveAt(e.touches[0].clientX, e.touches[0].clientY); }
-                    function onTE() { 
-                        document.removeEventListener('touchmove', onTM); document.removeEventListener('touchend', onTE); 
-                        data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
-                    }
-                    document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE); 
+                el.ontouchstart = (e) => {
+                    if(isDrawingMode) return; startDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    const onTM = (ev) => { ev.preventDefault(); onDrag(ev.touches[0].clientX, ev.touches[0].clientY); };
+                    const onTE = () => { document.removeEventListener('touchmove', onTM); document.removeEventListener('touchend', onTE); stopDrag(); };
+                    document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE);
                 };
             }
             addDragLogic(marker); 
@@ -639,6 +653,9 @@
             }
         }
 
+        // ==========================================
+        // [탭 2, 3] 계산 로직 유지
+        // ==========================================
         function toggleSpaceInputs() {
             const type = document.getElementById('spaceType').value;
             document.getElementById('input-rect').classList.remove('active'); document.getElementById('input-cyl').classList.remove('active');
