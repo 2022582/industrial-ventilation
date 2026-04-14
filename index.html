@@ -5,64 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 현장 안전 자가진단 시스템</title>
     <style>
+        /* 모든 요소 박스 사이징 통일 (잘림 방지 핵심) */
+        * { box-sizing: border-box; }
+        
         :root { --primary-color: #2c3e50; --accent-color: #3498db; --danger-color: #e74c3c; --success-color: #27ae60; --kosha-blue: #4a90e2; --fire-red: #d35400; --iot-color: #9b59b6; }
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #ecf0f1; margin: 0; padding: 10px; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #ecf0f1; margin: 0; padding: 10px; overflow-x: hidden; }
         .header { background: var(--primary-color); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .title-area { display: flex; align-items: center; gap: 10px; }
         .smart-badge { background-color: var(--danger-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; animation: pulse 2s infinite; }
         
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        /* 경고 애니메이션 최적화 (도형 호환) */
         @keyframes blink-red { 
             0% { background-color: #e74c3c; } 
             50% { background-color: #900C3F; filter: drop-shadow(0 0 10px #e74c3c); box-shadow: 0 0 10px #e74c3c; } 
             100% { background-color: #e74c3c; } 
         }
 
-        /* 탭 메뉴 스타일 */
         .tabs { display: flex; margin-bottom: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
         .tab-btn { flex: 1; min-width: 100px; padding: 15px 5px; text-align: center; cursor: pointer; font-weight: bold; background: #ecf0f1; border: none; outline: none; transition: 0.3s; font-size: 14px; color: #555; }
         @media (min-width: 768px) { .tab-btn { font-size: 15px; } }
         .tab-btn:hover { background: #dfe6e9; }
         .tab-btn.active { background: var(--accent-color); color: white; }
 
-        /* 컨텐츠 영역 */
         .tab-content { display: none; flex-direction: column; gap: 10px; }
         .tab-content.active { display: flex; }
         @media (min-width: 768px) { .tab-content.active { flex-direction: row; } }
         
-        /* 패널 공통 스타일 */
-        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; }
         .sidebar { order: 2; display: flex; flex-direction: column; width: 100%; }
         .main-content { order: 1; position: relative; width: 100%; }
-        @media (min-width: 768px) { .sidebar { width: 350px; order: 1; } .main-content { flex: 1; order: 2; } }
+        @media (min-width: 768px) { .sidebar { width: 350px; flex-shrink: 0; order: 1; } .main-content { flex: 1; min-width: 0; order: 2; } }
         
-        /* 1. 국소배기 탭 도면 영역 */
-        .layout-container { position: relative; width: 100%; height: 400px; background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; overflow: hidden; touch-action: none; background-image: radial-gradient(#e0e0e0 1px, transparent 1px); background-size: 20px 20px; }
-        @media (min-width: 768px) { .layout-container { height: 600px; } }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        /* --- 🚀 완벽한 도면 비율(Aspect Ratio) 설정 --- */
+        .layout-container { 
+            position: relative; width: 100%; aspect-ratio: 16 / 9; height: auto; min-height: 300px;
+            background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; 
+            overflow: hidden; touch-action: none; 
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px); background-size: 20px 20px; 
+        }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; width: 100%; height: 100%; }
         .canvas-drawing { cursor: crosshair; }
         
-        /* --- 🚀 도형 디자인 (네모, 동그라미, 세모) --- */
-        .hood-marker { position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; cursor: move; transition: top 0.2s, left 0.2s; display: flex; justify-content: center; box-sizing: border-box; }
-        
+        .hood-marker { position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; cursor: move; display: flex; justify-content: center; transform: translate(-50%, -50%); }
         .shape-square { border-radius: 4px; width: 40px; height: 40px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .shape-circle { border-radius: 50%; width: 44px; height: 44px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .shape-triangle { 
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%); 
-            width: 50px; height: 45px; 
-            align-items: flex-end; padding-bottom: 8px; 
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); /* 세모 전용 그림자 */
-        }
+        .shape-triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); width: 50px; height: 45px; align-items: flex-end; padding-bottom: 8px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
         .marker-danger { animation: blink-red 1s infinite !important; }
 
-        /* 도면 범례(Legend) 스타일 */
         .map-legend { position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 11px; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); line-height: 1.5; color: #333; }
-
         .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px; }
         .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; transition: 0.3s; }
 
-        /* 2, 3탭 (가이드/계산기) 전용 스타일 */
         .result-container { display: flex; gap: 15px; flex-wrap: wrap; }
         .guide-box { border: 2px solid var(--kosha-blue); border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f4f8fd; flex: 1; min-width: 250px; }
         .guide-box.fire-box { border-color: var(--fire-red); background: #fdf6f2; }
@@ -75,8 +68,7 @@
         .formula-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-top: 10px; text-align: center; overflow-x: auto; }
         .formula-img { color: var(--danger-color); font-weight: bold; font-size: 18px; letter-spacing: 1px; }
 
-        /* 폼 스타일 */
-        .form-group { margin-bottom: 12px; }
+        .form-group { margin-bottom: 12px; width: 100%; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
         .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
@@ -89,20 +81,27 @@
         .btn-print { background: #34495e; width: auto; }
         .copyright-sidebar { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #7f8c8d; }
 
-        /* 인쇄 규격 */
+        /* =========================================================
+           A4 출력(인쇄) 전용 규격 설정 (16:9 비율 유지하여 잘림 완벽 방지)
+           ========================================================= */
         @media print {
             @page { size: A4 portrait; margin: 10mm; }
-            body { background: white; margin: 0; padding: 0; font-size: 11pt; }
+            body { background: white; margin: 0; padding: 0; font-size: 11pt; max-width: 100vw; overflow-x: hidden; }
             .sidebar, .tabs, button, .header button { display: none !important; }
             .tab-content { display: none !important; } .tab-content.active { display: block !important; width: 100%; }
             .main-content { width: 100%; box-shadow: none; border: none; padding: 0; display: block !important; }
-            .layout-container { border: 2px solid #000; height: 100mm !important; max-height: 100mm; page-break-inside: avoid; margin-bottom: 15px; background-image: none; }
-            canvas { width: 100% !important; height: 100% !important; }
-            .map-legend { display: none !important; } /* 인쇄 시 범례 숨김 가능 (필요시 표시하려면 제거) */
+            
+            /* 핵심: 인쇄 시에도 비율을 16:9로 유지하여 찌그러짐 방지 */
+            .layout-container { border: 2px solid #000; width: 100% !important; height: auto !important; aspect-ratio: 16 / 9; page-break-inside: avoid; margin-bottom: 15px; background-image: none; }
+            .map-legend { display: none !important; } 
+            
             #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15px; font-weight: bold; color: black; }
-            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; table-layout: fixed; }
+            
+            /* 짤림 방지를 위한 반응형 표 */
+            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt; table-layout: fixed; word-break: keep-all; }
             .print-table tr { page-break-inside: avoid; page-break-after: auto; } .print-table th { background-color: #f2f2f2 !important; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; word-wrap: break-word; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 4px; text-align: center; overflow: hidden; }
+            
             .result-container { display: block !important; }
             .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; box-sizing: border-box; display: block; }
             .guide-title { color: black; border-bottom: 2px solid #000; font-size: 14pt; padding-bottom: 5px; }
@@ -123,7 +122,7 @@
     </div>
 
     <div class="tabs">
-        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 AI관제</button>
+        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 점검</button>
         <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-confined')">2. 밀폐공간 급기</button>
         <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-fire')">3. 화재/폭발 환기량</button>
     </div>
@@ -132,6 +131,7 @@
         <div class="sidebar panel">
             <h3 style="margin-top:0;">환경 설정</h3>
             <div class="form-group"><label>🏢 1. 전체 공장명</label><input type="text" id="factoryName" placeholder="예: 창원 제1공장"></div>
+            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
             <div class="form-group"><label>2. 세부 공정명</label><input type="text" id="processName" placeholder="예: 도장 1라인"></div>
             <div class="form-group"><label>3. 물질 상태 선택</label>
                 <div class="radio-group">
@@ -218,7 +218,7 @@
                     <h3 class="guide-title">1. 산출 결과</h3>
                     <p style="font-size: 16px;">총 밀폐공간 체적:<br><span id="resVolume" class="result-highlight" style="color:#2c3e50;">0.00</span> <span style="font-size:16px;">m³</span></p>
                     <p style="font-size: 16px;">필요 송풍기 용량 (Q):<br><span id="resFanCap" class="result-highlight">0.00</span> <span style="font-size:16px;">m³/min 이상</span></p>
-                    <p style="font-size:12px; color:#666;">* 계산식: 체적(m³) × 0.4 (ACH 20회, 효율 80% 적용)</p>
+                    <p style="font-size:12px; color:#666; margin-bottom: 0;">* 계산식: 체적(m³) × 0.4 (ACH 20회, 효율 80% 적용)</p>
                 </div>
                 <div class="guide-box">
                     <h3 class="guide-title">2. 송풍기 설치 기준</h3>
@@ -261,6 +261,7 @@
             <div class="form-group"><label>4. 안전계수 (C)</label><input type="number" id="fireC" value="4" step="1"></div>
             <div class="form-group"><label>5. 물질의 분자량 (MW)</label><input type="number" id="fireMW" step="0.1"></div>
             <div class="form-group"><label>6. 폭발 농도 하한치 (LEL) <span class="unit-label">[%]</span></label><input type="number" id="fireLEL" step="0.1"></div>
+            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
             <div class="form-group"><label>7. 실제 작업장 온도 (t) <span class="unit-label">[℃]</span></label><input type="number" id="fireT" value="21" step="1"></div>
 
             <button type="button" class="btn-fire" onclick="calculateFireVentilation()">전체환기량 계산하기</button>
@@ -297,7 +298,8 @@
 
     <script>
         // ==========================================
-        // 글로벌 변수 및 초기화 (로컬 스토리지 포함)
+        // 🚀 [핵심 수정 1] 좌표계 비율(%) 전환 (Responsive Coordinates)
+        // 화면 크기가 변하거나 인쇄할 때 캔버스 안의 선들이 완벽하게 위치를 유지합니다.
         // ==========================================
         let isDrawingMode = false, isDrawing = false;
         let startX, startY;
@@ -307,20 +309,17 @@
         let iotInterval = null; 
 
         window.onload = function() {
-            const savedLines = localStorage.getItem('smartVent_lines');
-            const savedHoods = localStorage.getItem('smartVent_hoods');
-            if(savedLines) lines = JSON.parse(savedLines);
-            if(savedHoods) {
-                hoodData = JSON.parse(savedHoods);
-                rebuildHoodMarkers();
-                updateStatusList();
-            }
-            setTimeout(resizeCanvas, 100);
+            const savedLines = localStorage.getItem('smartVent_lines_v2'); // 새 좌표계 보호
+            const savedHoods = localStorage.getItem('smartVent_hoods_v2');
+            if(savedLines) { lines = JSON.parse(savedLines); }
+            if(savedHoods) { hoodData = JSON.parse(savedHoods); rebuildHoodMarkers(); updateStatusList(); }
+            // 초기 캔버스 사이즈 설정
+            setTimeout(resizeCanvas, 200);
         };
 
         function saveDataLocal() {
-            localStorage.setItem('smartVent_lines', JSON.stringify(lines));
-            localStorage.setItem('smartVent_hoods', JSON.stringify(hoodData));
+            localStorage.setItem('smartVent_lines_v2', JSON.stringify(lines));
+            localStorage.setItem('smartVent_hoods_v2', JSON.stringify(hoodData));
         }
 
         function switchTab(e, tabId) {
@@ -331,9 +330,6 @@
             if(tabId === 'tab-exhaust') { setTimeout(resizeCanvas, 100); }
         }
 
-        // ==========================================
-        // [탭 1] 국소배기장치 (도면 엔진 및 Undo)
-        // ==========================================
         const canvas = document.getElementById('drawingCanvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('layoutContainer');
@@ -343,9 +339,11 @@
             printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 보고서" : `[${this.value}] 국소배기장치 관제 보고서`;
         });
 
+        // 리사이즈 시 비율에 맞춰 선 다시 그리기
         function resizeCanvas() {
             if(document.getElementById('tab-exhaust').classList.contains('active')) {
-                canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+                canvas.width = container.clientWidth; 
+                canvas.height = container.clientHeight;
                 redrawCanvas(); 
             }
         }
@@ -370,16 +368,26 @@
             isDrawingMode ? canvas.classList.add('canvas-drawing') : canvas.classList.remove('canvas-drawing');
         }
 
+        // 선을 다시 그릴 때는 비율(0.0~1.0)을 실제 픽셀(canvas.width/height)로 곱해서 그립니다.
         function redrawCanvas() {
+            if(!canvas.width || !canvas.height) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-            lines.forEach(line => { ctx.beginPath(); ctx.moveTo(line.x1, line.y1); ctx.lineTo(line.x2, line.y2); ctx.stroke(); });
+            lines.forEach(line => { 
+                ctx.beginPath(); 
+                ctx.moveTo(line.x1 * canvas.width, line.y1 * canvas.height); 
+                ctx.lineTo(line.x2 * canvas.width, line.y2 * canvas.height); 
+                ctx.stroke(); 
+            });
         }
 
         function getSnappedPoint(x, y) {
             let sx = x, sy = y, min = SNAP_RADIUS;
             for (let line of lines) {
-                const pts = [{x: line.x1, y: line.y1}, {x: line.x2, y: line.y2}];
+                const pts = [
+                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
+                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
+                ];
                 for (let pt of pts) {
                     const dist = Math.sqrt(Math.pow(pt.x - x, 2) + Math.pow(pt.y - y, 2));
                     if (dist < min) { min = dist; sx = pt.x; sy = pt.y; }
@@ -423,9 +431,12 @@
             
             let cx = rawX, cy = rawY; let alignGuides = [];
             for (let line of lines) {
-                const pts = [ {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2} ];
+                const pts = [
+                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
+                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
+                ];
                 for (let pt of pts) {
-                    if (pt.x === startX && pt.y === startY) continue;
+                    if (Math.abs(pt.x - startX) < 1 && Math.abs(pt.y - startY) < 1) continue;
                     if (Math.abs(cx - pt.x) < ALIGN_RADIUS) { cx = pt.x; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
                     if (Math.abs(cy - pt.y) < ALIGN_RADIUS) { cy = pt.y; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
                 }
@@ -454,15 +465,28 @@
             
             let cx = rawX, cy = rawY;
             for (let line of lines) {
-                const pts = [ {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2} ];
+                const pts = [
+                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
+                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
+                ];
                 for (let pt of pts) {
-                    if (pt.x === startX && pt.y === startY) continue;
+                    if (Math.abs(pt.x - startX) < 1 && Math.abs(pt.y - startY) < 1) continue;
                     if (Math.abs(cx - pt.x) < ALIGN_RADIUS) cx = pt.x;
                     if (Math.abs(cy - pt.y) < ALIGN_RADIUS) cy = pt.y;
                 }
             }
             const snapped = getSnappedPoint(cx, cy); let ex = snapped.x, ey = snapped.y; 
-            if (Math.abs(ex - startX) > 5 || Math.abs(ey - startY) > 5) { lines.push({ x1: startX, y1: startY, x2: ex, y2: ey }); saveDataLocal(); } 
+            
+            // 비율(%) 좌표로 저장 (핵심)
+            if (Math.abs(ex - startX) > 5 || Math.abs(ey - startY) > 5) { 
+                lines.push({ 
+                    x1: startX / canvas.width, 
+                    y1: startY / canvas.height, 
+                    x2: ex / canvas.width, 
+                    y2: ey / canvas.height 
+                }); 
+                saveDataLocal(); 
+            } 
             redrawCanvas(); 
         }
         
@@ -470,23 +494,22 @@
         canvas.addEventListener('touchstart', startPosition, {passive: false}); canvas.addEventListener('touchmove', drawLine, {passive: false}); canvas.addEventListener('touchend', stopPosition);
 
         // ==========================================
-        // 🚀 [도형 매핑 마커 생성 및 배치]
+        // 🚀 [핵심 수정 2] 마커 드래그 위치를 %로 저장
         // ==========================================
         function createMarkerElement(data) {
             const marker = document.createElement('div');
             
-            // 후드 타입에 따른 도형 클래스 할당
-            let shapeClass = 'shape-square'; // 기본 포위식 (네모)
-            if (data.type.includes('외부식')) shapeClass = 'shape-triangle'; // 세모
-            else if (data.type.includes('부스식')) shapeClass = 'shape-circle'; // 원형
+            let shapeClass = 'shape-square'; 
+            if (data.type.includes('외부식')) shapeClass = 'shape-triangle'; 
+            else if (data.type.includes('부스식')) shapeClass = 'shape-circle'; 
 
             marker.className = `hood-marker ${shapeClass}`;
             marker.id = `marker-${data.id}`;
             marker.style.backgroundColor = data.result === '양호' ? '#3498db' : '#e74c3c';
             if(data.result !== '양호') marker.classList.add('marker-danger');
             
-            marker.style.left = data.posX || '45%'; 
-            marker.style.top = data.posY || '45%';
+            marker.style.left = data.posX || '50%'; 
+            marker.style.top = data.posY || '50%';
             marker.innerText = `H${data.id}`; 
             marker.title = `[${data.process}] 측정: ${data.measured}m/s`;
             
@@ -494,16 +517,20 @@
                 el.onmousedown = function(e) {
                     if(isDrawingMode) return;
                     e.preventDefault();
-                    let sX = e.clientX - el.getBoundingClientRect().left; 
-                    let sY = e.clientY - el.getBoundingClientRect().top;
+                    let sX = e.clientX - el.getBoundingClientRect().left - el.offsetWidth/2; 
+                    let sY = e.clientY - el.getBoundingClientRect().top - el.offsetHeight/2;
                     
                     function moveAt(px, py) { 
                         const contRect = container.getBoundingClientRect();
                         let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
-                        if(newL < 0) newL = 0; if(newT < 0) newT = 0;
-                        if(newL + el.offsetWidth > contRect.width) newL = contRect.width - el.offsetWidth;
-                        if(newT + el.offsetHeight > contRect.height) newT = contRect.height - el.offsetHeight;
-                        el.style.left = newL + 'px'; el.style.top = newT + 'px'; 
+                        // %로 변환하여 실시간 적용
+                        let leftPercent = (newL / contRect.width) * 100;
+                        let topPercent = (newT / contRect.height) * 100;
+                        
+                        if(leftPercent < 0) leftPercent = 0; if(topPercent < 0) topPercent = 0;
+                        if(leftPercent > 100) leftPercent = 100; if(topPercent > 100) topPercent = 100;
+                        
+                        el.style.left = leftPercent + '%'; el.style.top = topPercent + '%'; 
                     }
                     function onMM(e) { moveAt(e.clientX, e.clientY); }
                     function onMU() { 
@@ -516,14 +543,19 @@
                 el.ontouchstart = function(e) {
                     if(isDrawingMode) return;
                     const touch = e.touches[0];
-                    let sX = touch.clientX - el.getBoundingClientRect().left; let sY = touch.clientY - el.getBoundingClientRect().top;
+                    let sX = touch.clientX - el.getBoundingClientRect().left - el.offsetWidth/2; 
+                    let sY = touch.clientY - el.getBoundingClientRect().top - el.offsetHeight/2;
+                    
                     function moveAt(px, py) { 
                         const contRect = container.getBoundingClientRect();
                         let newL = px - contRect.left - sX; let newT = py - contRect.top - sY;
-                        if(newL < 0) newL = 0; if(newT < 0) newT = 0;
-                        if(newL + el.offsetWidth > contRect.width) newL = contRect.width - el.offsetWidth;
-                        if(newT + el.offsetHeight > contRect.height) newT = contRect.height - el.offsetHeight;
-                        el.style.left = newL + 'px'; el.style.top = newT + 'px'; 
+                        let leftPercent = (newL / contRect.width) * 100;
+                        let topPercent = (newT / contRect.height) * 100;
+                        
+                        if(leftPercent < 0) leftPercent = 0; if(topPercent < 0) topPercent = 0;
+                        if(leftPercent > 100) leftPercent = 100; if(topPercent > 100) topPercent = 100;
+                        
+                        el.style.left = leftPercent + '%'; el.style.top = topPercent + '%'; 
                     }
                     function onTM(e) { e.preventDefault(); moveAt(e.touches[0].clientX, e.touches[0].clientY); }
                     function onTE() { 
@@ -558,9 +590,9 @@
                 const data = {
                     id: hoodData.length > 0 ? Math.max(...hoodData.map(h=>h.id)) + 1 : 1, 
                     process: processName, state: state === 'gaseous' ? '가스상' : '입자상',
-                    type: typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0], // (네모) 등 글자 제거
+                    type: typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0], 
                     legal: legal, measured: mVal.toFixed(2), result: isGood ? '양호' : '미흡',
-                    posX: '45%', posY: '45%'
+                    posX: '50%', posY: '50%'
                 };
                 hoodData.push(data);
                 createMarkerElement(data);
@@ -584,7 +616,6 @@
             });
         }
 
-        // 실시간 IoT 시뮬레이션
         function toggleIoTMode() {
             const btn = document.getElementById('iotBtn'); const status = document.getElementById('iotStatus');
             if (iotInterval) {
@@ -608,9 +639,6 @@
             }
         }
 
-        // ==========================================
-        // [탭 2] 밀폐공간 & [탭 3] 화재폭발 (유지)
-        // ==========================================
         function toggleSpaceInputs() {
             const type = document.getElementById('spaceType').value;
             document.getElementById('input-rect').classList.remove('active'); document.getElementById('input-cyl').classList.remove('active');
