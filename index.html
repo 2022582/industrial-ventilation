@@ -11,12 +11,8 @@
         
         .header { background: var(--primary-color); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .title-area { display: flex; align-items: center; gap: 10px; }
-        .smart-badge { background-color: var(--danger-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; animation: pulse 2s infinite; }
+        .smart-badge { background-color: var(--success-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; }
         
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes blink-red { 0% { background-color: #e74c3c; } 50% { background-color: #900C3F; box-shadow: 0 0 10px #e74c3c; } 100% { background-color: #e74c3c; } }
-
-        /* 탭 메뉴 */
         .tabs { display: flex; margin-bottom: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
         .tab-btn { flex: 1; min-width: 100px; padding: 15px 5px; text-align: center; cursor: pointer; font-weight: bold; background: #ecf0f1; border: none; outline: none; transition: 0.3s; font-size: 14px; color: #555; }
         @media (min-width: 768px) { .tab-btn { font-size: 15px; } }
@@ -27,13 +23,12 @@
         .tab-content.active { display: flex; }
         @media (min-width: 768px) { .tab-content.active { flex-direction: row; } }
         
-        /* 공통 패널 */
         .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; }
         .sidebar { order: 2; display: flex; flex-direction: column; }
         .main-content { order: 1; position: relative; display: flex; flex-direction: column; gap: 15px; width: 100%; }
         @media (min-width: 768px) { .sidebar { width: 380px; flex-shrink: 0; order: 1; } .main-content { flex: 1; min-width: 0; order: 2; overflow: hidden; } }
 
-        /* 1. 국소배기 탭 도면 영역 (비율 강제 고정) */
+        /* 도면 비율 고정 */
         .layout-container { 
             position: relative; width: 100%; aspect-ratio: 2 / 1; 
             background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; 
@@ -43,16 +38,19 @@
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .canvas-drawing { cursor: crosshair; }
         
+        /* 마커 디자인 */
         .hood-marker { 
             position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; 
             cursor: move; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.4); user-select: none;
             transition: background-color 0.3s, clip-path 0.3s; transform: translate(-50%, -50%);
         }
+        .shape-square { border-radius: 4px; width: 40px; height: 40px; }
+        .shape-circle { border-radius: 50%; width: 44px; height: 44px; }
+        .shape-triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); width: 50px; height: 45px; align-items: flex-end !important; padding-bottom: 8px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+        
         .drawing-active .hood-marker { pointer-events: none; opacity: 0.6; }
-        .marker-danger { animation: blink-red 1s infinite !important; }
 
-        /* 입력 폼 */
         .form-group { margin-bottom: 12px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
         .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
@@ -67,15 +65,17 @@
         button { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; font-size: 14px; }
         button:hover { background: #2980b9; }
         .btn-draw { background: #95a5a6; }
-        .btn-print { background: var(--primary-color); width: auto; }
+        .btn-print { background: #34495e; width: auto; }
         .btn-group-row { display: flex; gap: 5px; } 
         .btn-action { padding: 5px 8px; font-size: 11px; margin: 0; width: auto; }
-        .btn-iot { background: var(--iot-color); } .btn-iot:hover { background: #732d91; }
         
-        .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 400px; }
-        .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; display: flex; justify-content: space-between; align-items: flex-start; }
+        /* 결과 UI 디자인 */
+        .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 450px; }
+        .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; display: flex; justify-content: space-between; align-items: center; }
+        .q-compare-box { background: #fff; border: 1px solid #e0e0e0; padding: 6px; border-radius: 4px; margin-top: 5px; font-size: 12px; text-align: left; }
+        .compare-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
 
-        /* 2, 3탭 전용 스타일 */
+        /* 2, 3탭 (가이드/계산기) 전용 스타일 */
         .result-container { display: flex; gap: 15px; flex-wrap: wrap; }
         .guide-box { border: 2px solid var(--kosha-blue); border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f4f8fd; flex: 1; min-width: 250px; }
         .guide-box.fire-box { border-color: var(--fire-red); background: #fdf6f2; }
@@ -91,9 +91,9 @@
         .copyright-sidebar { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #7f8c8d; }
         .copyright-print { display: none; }
 
-        /* --- 🌟 A4 출력(인쇄) 여백 대칭 및 중앙정렬 완벽 제어 --- */
+        /* --- 🌟 A4 출력(인쇄) 최적화 --- */
         @media print {
-            @page { size: A4 portrait; margin: 20mm; }
+            @page { size: A4 portrait; margin: 15mm; }
             body { background: white; margin: 0; padding: 0; max-width: 100vw; overflow-x: hidden; }
             .container { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
             .header, .sidebar, .tabs, button { display: none !important; }
@@ -102,35 +102,32 @@
             .tab-content.active { display: block !important; width: 100%; }
             .main-content { display: block !important; width: 100% !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
             
-            #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15mm !important; font-weight: bold; color: black; }
-            #modeIndicator { display: none !important; }
+            #printTitle { display: block !important; text-align: center; font-size: 16pt; margin-bottom: 10mm !important; font-weight: bold; color: black; }
             
-            /* 도면 비율 고정 및 인쇄 최적화 */
             .layout-container { 
                 display: block !important; width: 100% !important; aspect-ratio: 2 / 1 !important; 
                 box-sizing: border-box !important; border: 1px solid #000 !important; 
-                background: transparent !important; margin: 0 auto 15mm auto !important; 
+                background: transparent !important; margin: 0 auto 10mm auto !important; 
                 page-break-inside: avoid; position: relative !important; background-image: none !important;
             }
             canvas { width: 100% !important; height: 100% !important; }
 
             .print-table { 
                 display: table !important; width: 100% !important; table-layout: fixed !important; 
-                border-collapse: collapse; font-size: 9.5pt; word-break: keep-all; 
+                border-collapse: collapse; font-size: 8pt; word-break: keep-all; 
                 margin: 0 auto !important; page-break-before: auto !important; 
             }
             .print-table thead { display: table-header-group; } 
             .print-table tr { page-break-inside: avoid; } 
             .print-table th { background-color: #f2f2f2 !important; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 8px 4px; text-align: center; overflow-wrap: break-word; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 5px 3px; text-align: center; }
             
             /* 2, 3탭 인쇄 최적화 */
             .result-container { display: block !important; } 
             .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; display: block; }
             .guide-title { color: black; border-bottom: 2px solid #000; font-size: 14pt; padding-bottom: 5px; }
-            .result-highlight { color: black; font-size: 16pt; }
 
-            .copyright-print { display: block; margin-top: 20mm; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
+            .copyright-print { display: block; margin-top: 15mm; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
         .print-table, #printTitle { display: none; }
@@ -140,13 +137,13 @@
     <div class="header">
         <div class="title-area">
             <h2 style="margin:0; font-size: 18px;">🛡️ AI·스마트 산업안전 통합 플랫폼</h2>
-            <span class="smart-badge">AI/IoT/CFD 관제형</span>
+            <span class="smart-badge">스마트 설계/자동산출 적용</span>
         </div>
         <button type="button" class="btn-print" onclick="window.print()">보고서 출력</button>
     </div>
 
     <div class="tabs">
-        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 스마트 점검</button>
+        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 정밀점검</button>
         <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-confined')">2. 밀폐공간 급기 가이드</button>
         <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-fire')">3. 화재/폭발 환기량</button>
     </div>
@@ -183,7 +180,7 @@
             </div>
 
             <div class="form-group">
-                <label>5. 법적 제어유속 (m/s) <span style="font-weight:normal; font-size:12px; color:#7f8c8d;">(자동)</span></label>
+                <label>5. 법적 제어풍속 (m/s) <span style="font-weight:normal; font-size:12px; color:#7f8c8d;">(자동)</span></label>
                 <input type="number" id="legalVelocity" readonly>
             </div>
             
@@ -202,22 +199,36 @@
                     <span>×</span>
                     <input type="number" id="rectH" step="0.01" placeholder="세로 (m)" oninput="calculateArea()">
                 </div>
-                
                 <div id="circleInputs" class="sub-inputs">
                     <input type="number" id="circleD" step="1" placeholder="원형 직경 (mm)" oninput="calculateArea()">
                 </div>
-
                 <input type="number" id="hoodArea" step="0.01" placeholder="최종 개구면적 (m²)">
             </div>
 
-            <div class="form-group">
-                <label>7. 오염원 거리 X (m) <span style="font-weight:normal; font-size:12px; color:#e74c3c;" id="distLabel">(외부식 전용)</span></label>
-                <input type="number" id="hoodDistance" step="0.01" placeholder="예: 0.5 (포위식은 비활성화)">
+            <div class="form-group" style="background:#fef9e7; padding:10px; border-radius:6px; border:1px solid #f5b041;">
+                <label style="color:#d35400;">⚠️ 7. 현장 제어풍속 (m/s)</label>
+                <span class="unit-label" style="display:block; margin-bottom:5px;">* 오염원 또는 개구면에서 측정한 풍속 (법적기준과 비교)</span>
+                <input type="number" id="controlVelocity" step="0.01" placeholder="예: 0.5">
             </div>
 
             <div class="form-group">
-                <label>8. 현장 측정유속 (m/s)</label>
-                <input type="number" id="measuredVelocity" step="0.01" placeholder="실제 측정한 풍속 입력">
+                <label>8. 오염원 거리 X (m) <span style="font-weight:normal; font-size:12px; color:#e74c3c;" id="distLabel">(외부식 전용)</span></label>
+                <input type="number" id="hoodDistance" step="0.01" placeholder="예: 0.5 (포위식은 비활성화)">
+            </div>
+
+            <div class="form-group" style="background:#f4f8fd; padding:12px; border-radius:6px; border:1px solid var(--kosha-blue);">
+                <label style="color:var(--primary-color);">📊 9. 배기량(Q) 산출용 측정 데이터</label>
+                
+                <div class="radio-group" style="margin-bottom: 8px; font-size: 13px;">
+                    <label><input type="radio" name="measureLoc" value="duct" checked onchange="toggleMeasureLoc()"> 덕트 내부 측정</label>
+                    <label><input type="radio" name="measureLoc" value="opening" onchange="toggleMeasureLoc()"> 개구면 측정</label>
+                </div>
+                
+                <div id="ductInputSection" class="sub-inputs" style="display:flex; margin-bottom:8px;">
+                    <input type="number" id="ductDiameter" step="1" placeholder="측정 덕트 직경 (mm) 입력">
+                </div>
+                
+                <input type="number" id="ductVelocity" step="0.01" placeholder="해당 위치에서의 측정 풍속 (m/s)">
             </div>
 
             <button type="button" id="saveBtn" onclick="addHoodToLayout()" style="margin-bottom: 5px;">도면에 배치 및 저장</button>
@@ -228,9 +239,6 @@
                 <button type="button" class="btn-draw" style="background:#e74c3c" onclick="clearCanvas()">전체 초기화</button>
             </div>
             
-            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
-            <button type="button" class="btn-iot" id="iotBtn" onclick="toggleIoTMode()">📡 AI/CFD 기류 시뮬레이션 및 IoT 관제 시작</button>
-
             <div class="status-list" id="statusList">
                 <strong>현장 모니터링 및 배기량 목록</strong>
             </div>
@@ -241,11 +249,10 @@
         </div>
 
         <div class="main-content panel">
-            <div id="printTitle">국소배기장치 자체 점검 및 배기량 산출 보고서</div>
+            <div id="printTitle">국소배기장치 정밀 진단 및 배기량 산출 보고서</div>
             
             <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <h3 id="modeIndicator" style="margin-top: 0; margin-bottom: 5px;">현장 레이아웃 (Layout)</h3>
-                <span id="iotStatus" style="font-size:12px; color:var(--iot-color); font-weight:bold; display:none; margin-bottom: 5px;">● IoT 센서/기류 시뮬레이션 연동 중...</span>
             </div>
             
             <div class="layout-container" id="layoutContainer">
@@ -256,13 +263,12 @@
                 <thead>
                     <tr>
                         <th style="width: 5%;">No</th>
-                        <th style="width: 15%;">공정명</th>
-                        <th style="width: 10%;">구분</th>
-                        <th style="width: 15%;">후드형태</th>
-                        <th style="width: 12%;">법적유속<br>(m/s)</th>
-                        <th style="width: 12%;">측정유속<br>(m/s)</th>
-                        <th style="width: 18%;">필요 배기량<br>(m³/min)</th>
-                        <th style="width: 13%;">판정</th>
+                        <th style="width: 14%;">공정명</th>
+                        <th style="width: 11%;">형태</th>
+                        <th style="width: 22%;">제어풍속(m/s)<br><span style="font-size:10px;font-weight:normal;">[현장 측정 vs 법적 기준]</span></th>
+                        <th style="width: 16%;">배기량(Q) 산출근거</th>
+                        <th style="width: 22%;">배기량(m³/min)<br><span style="font-size:10px;font-weight:normal;">[현재(실제) vs 필요(설계)]</span></th>
+                        <th style="width: 10%;">최종판정</th>
                     </tr>
                 </thead>
                 <tbody id="printBody"></tbody>
@@ -384,7 +390,7 @@
 
     <script>
         // ==========================================
-        // 글로벌 변수 및 로컬 스토리지 (데이터 유지)
+        // 글로벌 변수 및 로컬 스토리지
         // ==========================================
         const canvas = document.getElementById('drawingCanvas');
         const ctx = canvas.getContext('2d');
@@ -395,11 +401,10 @@
         let lines = [], hoodData = [];
         let nextId = 1, currentEditId = null; 
         const SNAP_RADIUS = 20, ALIGN_RADIUS = 10;
-        let iotInterval = null;
 
         window.onload = function() {
-            const savedLines = localStorage.getItem('smartVent_lines_v4');
-            const savedHoods = localStorage.getItem('smartVent_hoods_v4');
+            const savedLines = localStorage.getItem('smartVent_lines_v8');
+            const savedHoods = localStorage.getItem('smartVent_hoods_v8');
             if(savedLines) { lines = JSON.parse(savedLines); }
             if(savedHoods) { 
                 hoodData = JSON.parse(savedHoods); 
@@ -411,13 +416,10 @@
         };
 
         function saveDataLocal() {
-            localStorage.setItem('smartVent_lines_v4', JSON.stringify(lines));
-            localStorage.setItem('smartVent_hoods_v4', JSON.stringify(hoodData));
+            localStorage.setItem('smartVent_lines_v8', JSON.stringify(lines));
+            localStorage.setItem('smartVent_hoods_v8', JSON.stringify(hoodData));
         }
 
-        // ==========================================
-        // 탭 전환 
-        // ==========================================
         function switchTab(e, tabId) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -427,11 +429,11 @@
         }
 
         // ==========================================
-        // [탭 1] 폼 로직 (면적 및 법적유속 계산)
+        // [탭 1] 폼 로직 (면적 및 법적유속, 측정위치)
         // ==========================================
         document.getElementById('factoryName').addEventListener('input', function() {
             const printTitle = document.getElementById('printTitle');
-            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 및 배기량 산출 보고서" : `[${this.value}] 국소배기장치 자체 점검 및 배기량 산출 보고서`;
+            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 정밀 진단 및 배기량 산출 보고서" : `[${this.value}] 국소배기장치 정밀 진단 및 배기량 산출 보고서`;
         });
 
         const velocityMap = {
@@ -486,8 +488,15 @@
             }
         }
 
+        function toggleMeasureLoc() {
+            const loc = document.querySelector('input[name="measureLoc"]:checked').value;
+            const ductSec = document.getElementById('ductInputSection');
+            if (loc === 'duct') ductSec.style.display = 'flex';
+            else ductSec.style.display = 'none';
+        }
+
         // ==========================================
-        // [탭 1] 도면 엔진 (비율 좌표, Undo, 가이드선)
+        // [탭 1] 도면 엔진 
         // ==========================================
         function resizeCanvas() {
             if(document.getElementById('tab-exhaust').classList.contains('active')) {
@@ -524,8 +533,7 @@
         function clearCanvas() { if(!confirm("도면과 모든 후드 데이터를 삭제하시겠습니까?")) return; lines = []; hoodData = []; nextId = 1; container.querySelectorAll('.hood-marker').forEach(e => e.remove()); saveDataLocal(); redrawCanvas(); updateStatusList(); cancelEdit(); }
 
         function getCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            let cx = 0, cy = 0;
+            const rect = canvas.getBoundingClientRect(); let cx = 0, cy = 0;
             if (e.changedTouches && e.changedTouches.length > 0) { cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; } 
             else if (e.touches && e.touches.length > 0) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; } 
             else if (e.clientX !== undefined) { cx = e.clientX; cy = e.clientY; } 
@@ -582,14 +590,12 @@
         canvas.addEventListener('touchstart', startDrawing, {passive: false}); window.addEventListener('touchmove', drawMoving, {passive: false}); window.addEventListener('touchend', stopDrawing);
 
         // ==========================================
-        // [탭 1] 후드 마커 생성, 수정, 삭제 로직
+        // [탭 1] 후드 배치 및 데이터 저장 로직
         // ==========================================
         function cancelEdit() {
             currentEditId = null; const btn = document.getElementById('saveBtn'); btn.innerText = "도면에 배치 및 저장"; btn.style.backgroundColor = "var(--accent-color)";
             document.getElementById('processName').value = ''; document.getElementById('rectW').value = ''; document.getElementById('rectH').value = ''; document.getElementById('circleD').value = ''; document.getElementById('hoodArea').value = '';
-            const type = document.getElementById('hoodType').value;
-            if(type !== 'enclosed' && type !== 'booth') document.getElementById('hoodDistance').value = '';
-            document.getElementById('measuredVelocity').value = '';
+            document.getElementById('controlVelocity').value = ''; document.getElementById('hoodDistance').value = ''; document.getElementById('ductVelocity').value = ''; document.getElementById('ductDiameter').value = '';
         }
 
         function createMarkerElement(data) {
@@ -597,20 +603,17 @@
             let shapeClass = 'shape-square'; 
             if (data.typeVal.includes('enclosed') || data.typeVal.includes('booth')) {
                 shapeClass = data.typeVal === 'booth' ? 'shape-circle' : 'shape-square';
-            } else {
-                shapeClass = 'shape-triangle'; 
-            }
+            } else { shapeClass = 'shape-triangle'; }
 
             marker.className = `hood-marker ${shapeClass}`;
             marker.setAttribute('data-id', data.id); 
             marker.id = `marker-${data.id}`;
             marker.style.backgroundColor = data.result === '양호' ? '#3498db' : '#e74c3c';
-            if(data.result !== '양호') marker.classList.add('marker-danger');
             
             marker.style.left = data.posX || '50%'; 
             marker.style.top = data.posY || '50%';
             marker.innerText = `H${data.id}`; 
-            marker.title = `[${data.process}] Q: ${data.qValue} m³/min`;
+            marker.title = `[${data.process}] 판정: ${data.result}`;
             
             function addDragLogic(el) {
                 let isDragging = false;
@@ -631,19 +634,8 @@
                     if(!isDragging) return; isDragging = false;
                     data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
                 };
-
-                el.onmousedown = (e) => {
-                    e.preventDefault(); startDrag(e.clientX, e.clientY);
-                    const onMM = (ev) => onDrag(ev.clientX, ev.clientY);
-                    const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); stopDrag(); };
-                    document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU);
-                };
-                el.ontouchstart = (e) => {
-                    if(isDrawingMode) return; startDrag(e.touches[0].clientX, e.touches[0].clientY);
-                    const onTM = (ev) => { ev.preventDefault(); onDrag(ev.touches[0].clientX, ev.touches[0].clientY); };
-                    const onTE = () => { document.removeEventListener('touchmove', onTM); document.removeEventListener('touchend', onTE); stopDrag(); };
-                    document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE);
-                };
+                el.onmousedown = (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY); const onMM = (ev) => onDrag(ev.clientX, ev.clientY); const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); stopDrag(); }; document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU); };
+                el.ontouchstart = (e) => { if(isDrawingMode) return; startDrag(e.touches[0].clientX, e.touches[0].clientY); const onTM = (ev) => { ev.preventDefault(); onDrag(ev.touches[0].clientX, ev.touches[0].clientY); }; const onTE = () => { document.removeEventListener('touchmove', onTM); document.removeEventListener('touchend', onTE); stopDrag(); }; document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE); };
             }
             addDragLogic(marker); container.appendChild(marker);
         }
@@ -656,43 +648,74 @@
         function addHoodToLayout() {
             const processName = document.getElementById('processName').value;
             const areaStr = document.getElementById('hoodArea').value;
+            const ctrlStr = document.getElementById('controlVelocity').value;
             const distStr = document.getElementById('hoodDistance').value;
-            const measuredStr = document.getElementById('measuredVelocity').value;
+            const ductVcStr = document.getElementById('ductVelocity').value;
             const typeSelect = document.getElementById('hoodType'); const typeValue = typeSelect.value;
             
             if (!processName) { alert("공정명을 입력해주세요."); return; }
             if (!areaStr) { alert("개구면적(A)을 입력하거나 계산해주세요."); return; }
+            if (!ctrlStr) { alert("현장 제어풍속 측정값을 입력해주세요."); return; }
             if (typeValue !== 'enclosed' && typeValue !== 'booth' && !distStr) { alert("외부식의 경우 오염원 거리(X)를 입력해야 합니다."); return; }
-            if (!measuredStr) { alert("측정 유속을 입력해주세요."); return; }
+            if (!ductVcStr) { alert("배기량 산출용 측정 풍속을 입력해주세요."); return; }
+
+            const measureLoc = document.querySelector('input[name="measureLoc"]:checked').value;
+            let ductD = 0;
+            if (measureLoc === 'duct') {
+                ductD = parseFloat(document.getElementById('ductDiameter').value);
+                if (!ductD) { alert("덕트 내부 측정의 경우 덕트 직경(mm)을 입력해주세요."); return; }
+            }
 
             const stateValue = document.querySelector('input[name="state"]:checked').value;
             const stateText = stateValue === 'gaseous' ? '가스상' : '입자상';
             const typeText = typeSelect.options[typeSelect.selectedIndex].text.split(' (')[0]; 
             
-            const A = parseFloat(areaStr); const X = distStr ? parseFloat(distStr) : 0;
+            const A = parseFloat(areaStr); 
+            const X = distStr ? parseFloat(distStr) : 0;
             const legalVc = parseFloat(document.getElementById('legalVelocity').value);
-            const measuredVc = parseFloat(measuredStr);
-            const isGood = measuredVc >= legalVc;
+            
+            const ctrlVc = parseFloat(ctrlStr);
+            const ductVc = parseFloat(ductVcStr);
 
+            // [판정 1] 제어풍속 합격 여부
+            const isVcGood = ctrlVc >= legalVc;
+
+            // [산출] 필요 배기량 (Required Q)
             let requiredQ = 0;
             if (typeValue === 'enclosed' || typeValue === 'booth') { requiredQ = A * legalVc * 60; } 
             else { requiredQ = legalVc * (10 * Math.pow(X, 2) + A) * 60; }
+
+            // [산출] 현재 실제 배기량 (Actual Q)
+            let actualQ = 0;
+            if (measureLoc === 'duct') {
+                const ductArea = Math.PI * Math.pow(ductD / 1000, 2) / 4;
+                actualQ = ductVc * ductArea * 60;
+            } else {
+                actualQ = ductVc * A * 60;
+            }
+
+            // [판정 2] 배기량 합격 여부
+            const isQGood = actualQ >= requiredQ;
+            const overallResult = (isVcGood && isQGood) ? '양호' : '미흡';
 
             if (currentEditId) {
                 const index = hoodData.findIndex(item => item.id === currentEditId);
                 if(index !== -1) {
                     hoodData[index] = {
                         ...hoodData[index], process: processName, stateVal: stateValue, state: stateText, typeVal: typeValue, type: typeText,
-                        area: A, distance: X, legal: legalVc.toFixed(1), measured: measuredVc.toFixed(2), qValue: requiredQ.toFixed(2), result: isGood ? '양호' : '미흡'
+                        area: A, distance: X, legal: legalVc.toFixed(2), ctrlVc: ctrlVc.toFixed(2), isVcGood: isVcGood,
+                        reqQ: requiredQ.toFixed(2), measureLoc: measureLoc, ductD: ductD, ductVc: ductVc.toFixed(2), actQ: actualQ.toFixed(2), 
+                        isQGood: isQGood, result: overallResult
                     };
-                    rebuildHoodMarkers(); // 도형이 변경될 수 있으므로 전체 다시 그림
+                    rebuildHoodMarkers(); 
                 }
                 cancelEdit(); 
             } else {
                 const data = {
                     id: nextId++, process: processName, stateVal: stateValue, state: stateText, typeVal: typeValue, type: typeText,
-                    area: A, distance: X, legal: legalVc.toFixed(1), measured: measuredVc.toFixed(2), qValue: requiredQ.toFixed(2), result: isGood ? '양호' : '미흡',
-                    posX: '50%', posY: '50%'
+                    area: A, distance: X, legal: legalVc.toFixed(2), ctrlVc: ctrlVc.toFixed(2), isVcGood: isVcGood,
+                    reqQ: requiredQ.toFixed(2), measureLoc: measureLoc, ductD: ductD, ductVc: ductVc.toFixed(2), actQ: actualQ.toFixed(2), 
+                    isQGood: isQGood, result: overallResult, posX: '50%', posY: '50%'
                 };
                 hoodData.push(data);
                 createMarkerElement(data);
@@ -712,11 +735,17 @@
             document.querySelector('input[name="areaType"][value="direct"]').checked = true;
             toggleAreaInputs();
             document.getElementById('hoodArea').value = h.area;
+            
+            document.getElementById('controlVelocity').value = h.ctrlVc;
 
             if(h.typeVal !== 'enclosed' && h.typeVal !== 'booth') document.getElementById('hoodDistance').value = h.distance;
             else document.getElementById('hoodDistance').value = '';
             
-            document.getElementById('measuredVelocity').value = h.measured;
+            document.querySelector(`input[name="measureLoc"][value="${h.measureLoc}"]`).checked = true;
+            toggleMeasureLoc();
+            if(h.measureLoc === 'duct') document.getElementById('ductDiameter').value = h.ductD;
+
+            document.getElementById('ductVelocity').value = h.ductVc;
 
             currentEditId = id;
             const btn = document.getElementById('saveBtn');
@@ -739,57 +768,55 @@
 
             hoodData.forEach(h => {
                 const card = document.createElement('div'); card.className = 'status-card'; card.id = `card-${h.id}`;
-                card.style.borderLeftColor = h.result === '양호' ? '#3498db' : '#e74c3c';
+                const rColor = h.result === '양호' ? '#3498db' : '#e74c3c';
+                card.style.borderLeftColor = rColor;
+                
+                // 산출 근거 텍스트 생성
+                let locText = "";
+                if(h.measureLoc === 'duct') {
+                    locText = `덕트 측정<br><span style="font-size:10px; color:#555;">(Ø${h.ductD}mm, ${h.ductVc}m/s)</span>`;
+                } else {
+                    locText = `개구면 측정<br><span style="font-size:10px; color:#555;">(${h.area}m², ${h.ductVc}m/s)</span>`;
+                }
+                
+                const vcColor = h.isVcGood ? '#3498db' : '#e74c3c';
+                const qColor = h.isQGood ? '#3498db' : '#e74c3c';
+                
                 card.innerHTML = `
-                    <div>
-                        [H${h.id}] <strong>${h.process}</strong> / ${h.type} <br> 
-                        ▶ 풍속: 측정 <b id="val-${h.id}">${h.measured}</b> (법적 ${h.legal}) -> <b id="res-${h.id}" style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</b><br>
-                        ▶ 배기량(Q): <b id="qval-${h.id}">${h.qValue}</b> m³/min
+                    <div style="flex:1;">
+                        <span style="font-weight:bold; font-size:14px;">[H${h.id}] ${h.process}</span> <span style="font-size:12px;color:#7f8c8d;">(${h.type})</span><br>
+                        
+                        <div class="compare-row" style="margin-top:6px;">
+                            <span style="font-size:12px; font-weight:bold; color:${vcColor};">현장풍속 <span id="cv-${h.id}">${h.ctrlVc}</span>m/s</span>
+                            <span style="font-size:12px; color:#555;">(법적 ${h.legal}m/s)</span>
+                        </div>
+                        
+                        <div class="q-compare-box">
+                            <span style="color:${qColor}; font-weight:bold;">[Q 현재] <span id="qval-${h.id}">${h.actQ}</span></span>
+                            <span style="margin:0 5px;">VS</span> 
+                            <span style="color:#7f8c8d;">[Q 필요] ${h.reqQ}</span> 
+                        </div>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:5px; margin-left:5px;">
-                        <button class="btn-action" style="background:#f39c12; color:white; border:none; cursor:pointer; border-radius:3px;" onclick="editHood(${h.id})">수정</button>
-                        <button class="btn-action" style="background:#e74c3c; color:white; border:none; cursor:pointer; border-radius:3px;" onclick="deleteHood(${h.id})">삭제</button>
+                    <div style="display:flex; flex-direction:column; justify-content:space-between; align-items:center; margin-left:10px; width:50px;">
+                        <b id="res-${h.id}" style="color:${rColor}; font-size:15px; margin-bottom:5px;">${h.result}</b>
+                        <button class="btn-action" style="background:#f39c12; color:white; border:none; cursor:pointer; border-radius:3px; margin-bottom:3px; width:100%;" onclick="editHood(${h.id})">수정</button>
+                        <button class="btn-action" style="background:#e74c3c; color:white; border:none; cursor:pointer; border-radius:3px; width:100%;" onclick="deleteHood(${h.id})">삭제</button>
                     </div>
                 `;
                 list.appendChild(card);
 
-                const tr = `<tr><td>${h.id}</td><td>${h.process}</td><td>${h.state}</td><td>${h.type}</td><td>${h.legal}</td><td id="pt-val-${h.id}">${h.measured}</td><td id="pt-q-${h.id}" style="font-weight:bold; background-color:#fef9e7;">${h.qValue}</td><td id="pt-res-${h.id}"><strong style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</strong></td></tr>`;
+                // 인쇄용 테이블 열 생성 (현장값이 법적값보다 무조건 먼저 나옵니다)
+                const tr = `<tr>
+                                <td>${h.id}</td>
+                                <td>${h.process}</td>
+                                <td>${h.type}</td>
+                                <td><b id="pt-cv-${h.id}" style="color:${vcColor}">${h.ctrlVc}</b> / ${h.legal}</td>
+                                <td style="line-height:1.2;">${locText}</td>
+                                <td><b id="pt-q-${h.id}" style="color:${qColor}">${h.actQ}</b> / ${h.reqQ}</td>
+                                <td id="pt-res-${h.id}"><strong style="color:${rColor}">${h.result}</strong></td>
+                            </tr>`;
                 printBody.innerHTML += tr;
             });
-        }
-
-        function toggleIoTMode() {
-            const btn = document.getElementById('iotBtn'); const status = document.getElementById('iotStatus');
-            if (iotInterval) {
-                clearInterval(iotInterval); iotInterval = null;
-                btn.innerHTML = "📡 AI/CFD 기류 시뮬레이션 및 IoT 관제 시작"; btn.style.background = "var(--iot-color)"; status.style.display = "none";
-            } else {
-                if(hoodData.length === 0) { alert("연동할 후드를 먼저 배치해주세요."); return; }
-                btn.innerHTML = "🛑 시뮬레이션 및 관제 중지"; btn.style.background = "#e74c3c"; status.style.display = "block";
-                iotInterval = setInterval(() => {
-                    hoodData.forEach(h => {
-                        let change = (Math.random() * 0.1) - 0.05; let newVal = Math.max(0.1, parseFloat(h.measured) + change);
-                        h.measured = newVal.toFixed(2); h.result = newVal >= parseFloat(h.legal) ? '양호' : '미흡(경고)';
-                        
-                        // 시뮬레이션: 측정값이 변하면 필요배기량 대비 "현재 배기량"으로 계산 업데이트
-                        // (간이 시뮬: 실제 Q_actual = A * 측정V * 60)
-                        let newQ = 0;
-                        if (h.typeVal === 'enclosed' || h.typeVal === 'booth') { newQ = h.area * newVal * 60; } 
-                        else { newQ = newVal * (10 * Math.pow(h.distance, 2) + h.area) * 60; }
-                        h.qValue = newQ.toFixed(2);
-
-                        const marker = document.getElementById(`marker-${h.id}`); const valSpan = document.getElementById(`val-${h.id}`); 
-                        const resSpan = document.getElementById(`res-${h.id}`); const qSpan = document.getElementById(`qval-${h.id}`);
-                        const card = document.getElementById(`card-${h.id}`);
-                        
-                        if(marker && valSpan) {
-                            marker.title = `[${h.process}] Q: ${h.qValue} m³/min`; valSpan.innerText = h.measured; resSpan.innerText = h.result; qSpan.innerText = h.qValue;
-                            if(h.result.includes('미흡')) { marker.style.backgroundColor = '#e74c3c'; marker.classList.add('marker-danger'); card.style.borderLeftColor = '#e74c3c'; resSpan.style.color = '#e74c3c'; } 
-                            else { marker.style.backgroundColor = '#3498db'; marker.classList.remove('marker-danger'); card.style.borderLeftColor = '#3498db'; resSpan.style.color = '#3498db'; }
-                        }
-                    });
-                }, 1500);
-            }
         }
 
         // ==========================================
