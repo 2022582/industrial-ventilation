@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트 현장 안전 자가진단 시스템</title>
+    <title>AI·스마트 산업안전 통합 플랫폼</title>
     <style>
-        /* 🚀 [수정] 모든 요소의 크기 계산을 테두리 포함으로 통일하여 인쇄 시 잘림 원천 차단 */
         * { box-sizing: border-box; }
-        
-        :root { --primary-color: #2c3e50; --accent-color: #3498db; --danger-color: #e74c3c; --success-color: #27ae60; --kosha-blue: #4a90e2; --fire-red: #d35400; --iot-color: #9b59b6; }
+        :root { --primary-color: #2c3e50; --accent-color: #3498db; --danger-color: #e74c3c; --success-color: #27ae60; --kosha-blue: #4a90e2; --fire-red: #d35400; --iot-color: #8e44ad; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #ecf0f1; margin: 0; padding: 10px; overflow-x: hidden; }
         
         .header { background: var(--primary-color); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -16,8 +14,9 @@
         .smart-badge { background-color: var(--danger-color); font-size: 11px; padding: 3px 8px; border-radius: 12px; animation: pulse 2s infinite; }
         
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes blink-red { 0% { background-color: #e74c3c; } 50% { background-color: #900C3F; filter: drop-shadow(0 0 10px #e74c3c); box-shadow: 0 0 10px #e74c3c; } 100% { background-color: #e74c3c; } }
+        @keyframes blink-red { 0% { background-color: #e74c3c; } 50% { background-color: #900C3F; box-shadow: 0 0 10px #e74c3c; } 100% { background-color: #e74c3c; } }
 
+        /* 탭 메뉴 */
         .tabs { display: flex; margin-bottom: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
         .tab-btn { flex: 1; min-width: 100px; padding: 15px 5px; text-align: center; cursor: pointer; font-weight: bold; background: #ecf0f1; border: none; outline: none; transition: 0.3s; font-size: 14px; color: #555; }
         @media (min-width: 768px) { .tab-btn { font-size: 15px; } }
@@ -28,35 +27,55 @@
         .tab-content.active { display: flex; }
         @media (min-width: 768px) { .tab-content.active { flex-direction: row; } }
         
+        /* 공통 패널 */
         .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; }
-        .sidebar { order: 2; display: flex; flex-direction: column; width: 100%; }
-        .main-content { order: 1; position: relative; width: 100%; }
-        @media (min-width: 768px) { .sidebar { width: 350px; flex-shrink: 0; order: 1; } .main-content { flex: 1; min-width: 0; order: 2; } }
-        
-        /* --- 🚀 [핵심 수정] 완벽한 도면 비율(Aspect Ratio) 강제 고정 --- */
-        /* 화면이든 인쇄든 무조건 1.5:1 (가로:세로) 비율을 유지하여 마커와 선이 어긋나지 않게 합니다. */
+        .sidebar { order: 2; display: flex; flex-direction: column; }
+        .main-content { order: 1; position: relative; display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        @media (min-width: 768px) { .sidebar { width: 380px; flex-shrink: 0; order: 1; } .main-content { flex: 1; min-width: 0; order: 2; overflow: hidden; } }
+
+        /* 1. 국소배기 탭 도면 영역 (비율 강제 고정) */
         .layout-container { 
-            position: relative; width: 100%; 
-            aspect-ratio: 1.5; /* 절대 비율 고정 */
+            position: relative; width: 100%; aspect-ratio: 2 / 1; 
             background: #fff; border: 2px solid #bdc3c7; border-radius: 4px; 
             overflow: hidden; touch-action: none; 
             background-image: radial-gradient(#e0e0e0 1px, transparent 1px); background-size: 20px 20px; 
         }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; width: 100%; height: 100%; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .canvas-drawing { cursor: crosshair; }
         
-        /* 마커 디자인 */
-        .hood-marker { position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; cursor: move; display: flex; justify-content: center; transform: translate(-50%, -50%); }
-        .shape-square { border-radius: 4px; width: 40px; height: 40px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .shape-circle { border-radius: 50%; width: 44px; height: 44px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .shape-triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); width: 50px; height: 45px; align-items: flex-end; padding-bottom: 8px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+        .hood-marker { 
+            position: absolute; z-index: 10; color: white; font-weight: bold; font-size: 12px; 
+            cursor: move; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4); user-select: none;
+            transition: background-color 0.3s, clip-path 0.3s; transform: translate(-50%, -50%);
+        }
+        .drawing-active .hood-marker { pointer-events: none; opacity: 0.6; }
         .marker-danger { animation: blink-red 1s infinite !important; }
 
-        .map-legend { position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 11px; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); line-height: 1.5; color: #333; }
-        .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px; }
-        .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; transition: 0.3s; }
+        /* 입력 폼 */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
+        .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .radio-group { display: flex; gap: 15px; margin-bottom: 10px; }
+        .radio-group label { display: inline; font-weight: normal; }
+        input:disabled, input[readonly] { background-color: #f8f9fa; cursor: not-allowed; color: #7f8c8d; }
+        
+        .sub-inputs { display: none; gap: 5px; margin-bottom: 5px; background: #fdfefe; padding: 8px; border: 1px dashed #bdc3c7; border-radius: 4px; }
+        .sub-inputs span { line-height: 38px; font-weight: bold; color: #7f8c8d; }
+        
+        button { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        button:hover { background: #2980b9; }
+        .btn-draw { background: #95a5a6; }
+        .btn-print { background: var(--primary-color); width: auto; }
+        .btn-group-row { display: flex; gap: 5px; } 
+        .btn-action { padding: 5px 8px; font-size: 11px; margin: 0; width: auto; }
+        .btn-iot { background: var(--iot-color); } .btn-iot:hover { background: #732d91; }
+        
+        .status-list { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 400px; }
+        .status-card { background: #f9f9f9; border-left: 5px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; display: flex; justify-content: space-between; align-items: flex-start; }
 
-        /* 2, 3탭 스타일 */
+        /* 2, 3탭 전용 스타일 */
         .result-container { display: flex; gap: 15px; flex-wrap: wrap; }
         .guide-box { border: 2px solid var(--kosha-blue); border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f4f8fd; flex: 1; min-width: 250px; }
         .guide-box.fire-box { border-color: var(--fire-red); background: #fdf6f2; }
@@ -69,138 +88,189 @@
         .formula-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-top: 10px; text-align: center; overflow-x: auto; }
         .formula-img { color: var(--danger-color); font-weight: bold; font-size: 18px; letter-spacing: 1px; }
 
-        /* 폼 스타일 */
-        .form-group { margin-bottom: 12px; width: 100%; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
-        .unit-label { font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 5px; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
-        .radio-group { display: flex; gap: 15px; margin-bottom: 10px; }
-        button { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; font-size: 14px; }
-        button:hover { background: #2980b9; }
-        .btn-fire { background: var(--fire-red); } .btn-fire:hover { background: #ba4a00; }
-        .btn-draw { background: #95a5a6; padding: 10px; }
-        .btn-iot { background: var(--iot-color); display: flex; justify-content: center; align-items: center; gap: 5px; } .btn-iot:hover { background: #8e44ad; }
-        .btn-print { background: #34495e; width: auto; }
         .copyright-sidebar { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #7f8c8d; }
+        .copyright-print { display: none; }
 
-        /* =========================================================
-           🚀 A4 출력(인쇄) 전용 규격 설정 (잘림 및 틀어짐 완벽 방지)
-           ========================================================= */
+        /* --- 🌟 A4 출력(인쇄) 여백 대칭 및 중앙정렬 완벽 제어 --- */
         @media print {
-            @page { size: A4 portrait; margin: 15mm 10mm; } 
-            body { background: white; margin: 0; padding: 0; font-size: 11pt; max-width: 100%; }
+            @page { size: A4 portrait; margin: 20mm; }
+            body { background: white; margin: 0; padding: 0; max-width: 100vw; overflow-x: hidden; }
+            .container { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .header, .sidebar, .tabs, button { display: none !important; }
             
-            /* 불필요한 웹 UI 숨김 (공간 확보) */
-            .header, .sidebar, .tabs, button, .map-legend { display: none !important; }
-            
-            /* 탭 강제 정렬 */
             .tab-content { display: none !important; }
             .tab-content.active { display: block !important; width: 100%; }
-            .main-content { width: 100%; padding: 0; display: block !important; }
+            .main-content { display: block !important; width: 100% !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
             
-            /* 핵심: 인쇄 시에도 비율을 1.5로 강제하여 찌그러짐 원천 방지 */
+            #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15mm !important; font-weight: bold; color: black; }
+            #modeIndicator { display: none !important; }
+            
+            /* 도면 비율 고정 및 인쇄 최적화 */
             .layout-container { 
-                border: 2px solid #000; width: 100% !important; 
-                aspect-ratio: 1.5 !important; height: auto !important; 
-                page-break-inside: avoid; margin-bottom: 15px; background-image: none; 
+                display: block !important; width: 100% !important; aspect-ratio: 2 / 1 !important; 
+                box-sizing: border-box !important; border: 1px solid #000 !important; 
+                background: transparent !important; margin: 0 auto 15mm auto !important; 
+                page-break-inside: avoid; position: relative !important; background-image: none !important;
             }
-            canvas { width: 100% !important; height: 100% !important; } 
-            
-            #printTitle { display: block !important; text-align: center; font-size: 20pt; margin-bottom: 15px; font-weight: bold; color: black; }
-            
-            /* 짤림 방지를 위한 반응형 표 (글자 줄바꿈 강제) */
-            .print-table { display: table !important; width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt; table-layout: fixed; }
-            .print-table tr { page-break-inside: avoid; page-break-after: auto; }
+            canvas { width: 100% !important; height: 100% !important; }
+
+            .print-table { 
+                display: table !important; width: 100% !important; table-layout: fixed !important; 
+                border-collapse: collapse; font-size: 9.5pt; word-break: keep-all; 
+                margin: 0 auto !important; page-break-before: auto !important; 
+            }
+            .print-table thead { display: table-header-group; } 
+            .print-table tr { page-break-inside: avoid; } 
             .print-table th { background-color: #f2f2f2 !important; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; word-break: keep-all; overflow-wrap: break-word; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px 4px; text-align: center; overflow-wrap: break-word; }
             
+            /* 2, 3탭 인쇄 최적화 */
             .result-container { display: block !important; } 
             .guide-box { border: 1px solid #000; page-break-inside: avoid; background: white !important; margin-bottom: 15px !important; width: 100% !important; display: block; }
             .guide-title { color: black; border-bottom: 2px solid #000; font-size: 14pt; padding-bottom: 5px; }
             .result-highlight { color: black; font-size: 16pt; }
 
-            .copyright-print { display: block; margin-top: 20px; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
-            
+            .copyright-print { display: block; margin-top: 20mm; text-align: center; font-size: 9pt; color: #333; border-top: 1px solid #000; padding-top: 10px; page-break-inside: avoid; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
-        .print-table, #printTitle, .copyright-print { display: none; }
+        .print-table, #printTitle { display: none; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title-area">
-            <h2 style="margin:0; font-size: 18px;">🛡️ AI 현장 안전 통합 플랫폼</h2>
-            <span class="smart-badge">AI/IoT 적용형</span>
+            <h2 style="margin:0; font-size: 18px;">🛡️ AI·스마트 산업안전 통합 플랫폼</h2>
+            <span class="smart-badge">AI/IoT/CFD 관제형</span>
         </div>
         <button type="button" class="btn-print" onclick="window.print()">보고서 출력</button>
     </div>
 
     <div class="tabs">
-        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 점검</button>
-        <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-confined')">2. 밀폐공간 급기</button>
+        <button type="button" class="tab-btn active" onclick="switchTab(event, 'tab-exhaust')">1. 국소배기 스마트 점검</button>
+        <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-confined')">2. 밀폐공간 급기 가이드</button>
         <button type="button" class="tab-btn" onclick="switchTab(event, 'tab-fire')">3. 화재/폭발 환기량</button>
     </div>
 
     <div id="tab-exhaust" class="tab-content active">
         <div class="sidebar panel">
             <h3 style="margin-top:0;">환경 설정</h3>
-            <div class="form-group"><label>🏢 1. 전체 공장명</label><input type="text" id="factoryName" placeholder="예: 창원 제1공장"></div>
-            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
-            <div class="form-group"><label>2. 세부 공정명</label><input type="text" id="processName" placeholder="예: 도장 1라인"></div>
-            <div class="form-group"><label>3. 물질 상태 선택</label>
+            <div class="form-group">
+                <label>🏢 1. 전체 공장명</label>
+                <input type="text" id="factoryName" placeholder="예: 창원 제1공장">
+            </div>
+            <div class="form-group">
+                <label>2. 세부 공정명</label>
+                <input type="text" id="processName" placeholder="예: 도장 1라인, 용접부스">
+            </div>
+
+            <div class="form-group">
+                <label>3. 물질 상태</label>
                 <div class="radio-group">
-                    <label><input type="radio" name="state" value="gaseous" checked onchange="updateLegalVelocity()"> 가스상</label>
-                    <label><input type="radio" name="state" value="particulate" onchange="updateLegalVelocity()"> 입자상</label>
+                    <label><input type="radio" name="state" value="gaseous" checked onchange="updateFormLogic()"> 가스상</label>
+                    <label><input type="radio" name="state" value="particulate" onchange="updateFormLogic()"> 입자상</label>
                 </div>
             </div>
-            <div class="form-group"><label>4. 후드 형태 선택</label>
-                <select id="hoodType" onchange="updateLegalVelocity()">
-                    <option value="enclosed">포위식 (네모)</option>
-                    <option value="booth">부스식 (동그라미)</option>
-                    <option value="lateral">외부식 - 측방형 (세모)</option>
-                    <option value="downward">외부식 - 하방형 (세모)</option>
-                    <option value="upward">외부식 - 상방형 (세모)</option>
+
+            <div class="form-group">
+                <label>4. 후드 형태 선택</label>
+                <select id="hoodType" onchange="updateFormLogic()">
+                    <option value="enclosed">포위식 (사각형)</option>
+                    <option value="booth">부스식 (원형)</option>
+                    <option value="lateral">외부식 - 측방형 (삼각형)</option>
+                    <option value="downward">외부식 - 하방형 (삼각형)</option>
+                    <option value="upward">외부식 - 상방형 (삼각형)</option>
                 </select>
             </div>
-            <div class="form-group"><label>5. 법적 제어유속</label><input type="number" id="legalVelocity" readonly style="background-color: #f8f9fa;"></div>
-            <div class="form-group"><label>6. 현재 측정유속 (m/s)</label><input type="number" id="measuredVelocity" step="0.01" placeholder="현장 측정값 입력"></div>
-            
-            <button type="button" onclick="addHoodToLayout()">도면에 후드 배치하기</button>
-            <div style="display: flex; gap: 5px;">
-                <button type="button" class="btn-draw" onclick="toggleDrawMode()" id="drawBtn" style="flex: 2;">도면 그리기: OFF</button>
-                <button type="button" class="btn-draw" style="background:#f39c12; flex: 1.2;" onclick="undoLastLine()" title="단축키: Ctrl+Z">↩ 되돌리기</button>
-                <button type="button" class="btn-draw" style="background:#e74c3c; flex: 1;" onclick="clearCanvas()">초기화</button>
+
+            <div class="form-group">
+                <label>5. 법적 제어유속 (m/s) <span style="font-weight:normal; font-size:12px; color:#7f8c8d;">(자동)</span></label>
+                <input type="number" id="legalVelocity" readonly>
             </div>
             
             <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
-            <button type="button" class="btn-iot" id="iotBtn" onclick="toggleIoTMode()">📡 IoT 실시간 모니터링 시작</button>
 
-            <div class="status-list" id="statusList"><strong>현장 모니터링 목록</strong></div>
-            <div class="copyright-sidebar">ⓒ 2026 AI 스마트 안전기술 | <strong>2022582@kiha.or.kr</strong></div>
+            <div class="form-group">
+                <label>6. 개구면적 A (m²)</label>
+                <div class="radio-group" style="margin-bottom: 8px; font-size: 13px;">
+                    <label><input type="radio" name="areaType" value="direct" checked onchange="toggleAreaInputs()"> 직접입력</label>
+                    <label><input type="radio" name="areaType" value="rect" onchange="toggleAreaInputs()"> 사각형</label>
+                    <label><input type="radio" name="areaType" value="circle" onchange="toggleAreaInputs()"> 원형</label>
+                </div>
+                
+                <div id="rectInputs" class="sub-inputs">
+                    <input type="number" id="rectW" step="0.01" placeholder="가로 (m)" oninput="calculateArea()">
+                    <span>×</span>
+                    <input type="number" id="rectH" step="0.01" placeholder="세로 (m)" oninput="calculateArea()">
+                </div>
+                
+                <div id="circleInputs" class="sub-inputs">
+                    <input type="number" id="circleD" step="1" placeholder="원형 직경 (mm)" oninput="calculateArea()">
+                </div>
+
+                <input type="number" id="hoodArea" step="0.01" placeholder="최종 개구면적 (m²)">
+            </div>
+
+            <div class="form-group">
+                <label>7. 오염원 거리 X (m) <span style="font-weight:normal; font-size:12px; color:#e74c3c;" id="distLabel">(외부식 전용)</span></label>
+                <input type="number" id="hoodDistance" step="0.01" placeholder="예: 0.5 (포위식은 비활성화)">
+            </div>
+
+            <div class="form-group">
+                <label>8. 현장 측정유속 (m/s)</label>
+                <input type="number" id="measuredVelocity" step="0.01" placeholder="실제 측정한 풍속 입력">
+            </div>
+
+            <button type="button" id="saveBtn" onclick="addHoodToLayout()" style="margin-bottom: 5px;">도면에 배치 및 저장</button>
+            <button type="button" class="btn-draw" onclick="toggleDrawMode()" id="drawBtn">도면 그리기 모드: OFF</button>
+            
+            <div class="btn-group-row">
+                <button type="button" class="btn-draw" style="background:#f39c12" onclick="undoLastLine()" title="단축키: Ctrl + Z">↩ 선 지우기</button>
+                <button type="button" class="btn-draw" style="background:#e74c3c" onclick="clearCanvas()">전체 초기화</button>
+            </div>
+            
+            <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
+            <button type="button" class="btn-iot" id="iotBtn" onclick="toggleIoTMode()">📡 AI/CFD 기류 시뮬레이션 및 IoT 관제 시작</button>
+
+            <div class="status-list" id="statusList">
+                <strong>현장 모니터링 및 배기량 목록</strong>
+            </div>
+
+            <div class="copyright-sidebar">
+                ⓒ 2026 AI 산업안전 대시보드 | 2022582@kiha.or.kr
+            </div>
         </div>
 
         <div class="main-content panel">
-            <div id="printTitle">국소배기장치 자체 점검 보고서</div>
-            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                <h3 id="modeIndicator" style="margin: 0;">현장 레이아웃 (Layout)</h3>
-                <span id="iotStatus" style="font-size:12px; color:var(--iot-color); font-weight:bold; display:none;">● 실시간 센서 연동 중...</span>
+            <div id="printTitle">국소배기장치 자체 점검 및 배기량 산출 보고서</div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <h3 id="modeIndicator" style="margin-top: 0; margin-bottom: 5px;">현장 레이아웃 (Layout)</h3>
+                <span id="iotStatus" style="font-size:12px; color:var(--iot-color); font-weight:bold; display:none; margin-bottom: 5px;">● IoT 센서/기류 시뮬레이션 연동 중...</span>
             </div>
             
             <div class="layout-container" id="layoutContainer">
                 <canvas id="drawingCanvas"></canvas>
-                <div class="map-legend">
-                    <strong>📌 후드 범례</strong><br>
-                    <span style="display:inline-block; width:10px; height:10px; background:#2c3e50; margin-right:3px;"></span> 포위식<br>
-                    <span style="display:inline-block; width:10px; height:10px; background:#2c3e50; border-radius:50%; margin-right:3px;"></span> 부스식<br>
-                    <span style="display:inline-block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:11px solid #2c3e50; margin-right:2px; transform:translateY(2px);"></span> 외부식
-                </div>
             </div>
-            
+
             <table class="print-table" id="printTable">
-                <thead><tr><th style="width:10%;">ID</th><th style="width:25%;">공정명</th><th style="width:15%;">상태</th><th style="width:20%;">후드형태</th><th style="width:10%;">법적</th><th style="width:10%;">측정</th><th style="width:10%;">판정</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">No</th>
+                        <th style="width: 15%;">공정명</th>
+                        <th style="width: 10%;">구분</th>
+                        <th style="width: 15%;">후드형태</th>
+                        <th style="width: 12%;">법적유속<br>(m/s)</th>
+                        <th style="width: 12%;">측정유속<br>(m/s)</th>
+                        <th style="width: 18%;">필요 배기량<br>(m³/min)</th>
+                        <th style="width: 13%;">판정</th>
+                    </tr>
+                </thead>
                 <tbody id="printBody"></tbody>
             </table>
-            <div class="copyright-print">ⓒ 2026 AI 현장안전 관제 대시보드 | 문의: 2022582@kiha.or.kr</div>
+
+            <div class="copyright-print">
+                ⓒ 2026 AI·스마트 산업안전기술 대시보드 | 시스템 오류 및 문의: 2022582@kiha.or.kr
+            </div>
         </div>
     </div>
 
@@ -274,7 +344,7 @@
             </div>
             <div class="form-group"><label>2. 물질의 비중 (S)</label><input type="number" id="fireS" step="0.01"></div>
             <div class="form-group"><label>3. 인화물질 사용량 (W) <span class="unit-label">[L/min]</span></label><input type="number" id="fireW" step="0.1" value="2.5"></div>
-            <div class="form-group"><label>4. 안전계수 (C)</label><input type="number" id="fireC" value="4" step="1"></div>
+            <div class="form-group"><label>4. 안전계수 (C)</label><input type="number" id="fireC" value="4" step="1" title="LEL 25% (1/4유지) 경우 기본값 4"><span class="unit-label">* LEL 25% 유지 시 C=4</span></div>
             <div class="form-group"><label>5. 물질의 분자량 (MW)</label><input type="number" id="fireMW" step="0.1"></div>
             <div class="form-group"><label>6. 폭발 농도 하한치 (LEL) <span class="unit-label">[%]</span></label><input type="number" id="fireLEL" step="0.1"></div>
             <hr style="border: 0; height: 1px; background: #eee; margin: 15px 0;">
@@ -314,29 +384,40 @@
 
     <script>
         // ==========================================
-        // 🚀 [핵심 수정 1] 절대 비율 좌표계 (Responsive Ratio)
-        // 화면 크기가 변하거나 인쇄할 때 캔버스 안의 선들이 완벽하게 위치를 유지합니다.
+        // 글로벌 변수 및 로컬 스토리지 (데이터 유지)
         // ==========================================
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('layoutContainer');
+        
         let isDrawingMode = false, isDrawing = false;
         let startX, startY;
         let lines = [], hoodData = [];
-        const SNAP_RADIUS = 20;
-        const ALIGN_RADIUS = 10;
-        let iotInterval = null; 
+        let nextId = 1, currentEditId = null; 
+        const SNAP_RADIUS = 20, ALIGN_RADIUS = 10;
+        let iotInterval = null;
 
         window.onload = function() {
-            const savedLines = localStorage.getItem('smartVent_lines_v3');
-            const savedHoods = localStorage.getItem('smartVent_hoods_v3');
+            const savedLines = localStorage.getItem('smartVent_lines_v4');
+            const savedHoods = localStorage.getItem('smartVent_hoods_v4');
             if(savedLines) { lines = JSON.parse(savedLines); }
-            if(savedHoods) { hoodData = JSON.parse(savedHoods); rebuildHoodMarkers(); updateStatusList(); }
+            if(savedHoods) { 
+                hoodData = JSON.parse(savedHoods); 
+                if(hoodData.length > 0) nextId = Math.max(...hoodData.map(h => h.id)) + 1;
+                rebuildHoodMarkers(); 
+                updateStatusList(); 
+            }
             setTimeout(resizeCanvas, 200);
         };
 
         function saveDataLocal() {
-            localStorage.setItem('smartVent_lines_v3', JSON.stringify(lines));
-            localStorage.setItem('smartVent_hoods_v3', JSON.stringify(hoodData));
+            localStorage.setItem('smartVent_lines_v4', JSON.stringify(lines));
+            localStorage.setItem('smartVent_hoods_v4', JSON.stringify(hoodData));
         }
 
+        // ==========================================
+        // 탭 전환 
+        // ==========================================
         function switchTab(e, tabId) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -345,179 +426,183 @@
             if(tabId === 'tab-exhaust') { setTimeout(resizeCanvas, 100); }
         }
 
-        const canvas = document.getElementById('drawingCanvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('layoutContainer');
-
+        // ==========================================
+        // [탭 1] 폼 로직 (면적 및 법적유속 계산)
+        // ==========================================
         document.getElementById('factoryName').addEventListener('input', function() {
             const printTitle = document.getElementById('printTitle');
-            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 보고서" : `[${this.value}] 국소배기장치 자체 점검 보고서`;
+            printTitle.innerText = this.value.trim() === '' ? "국소배기장치 자체 점검 및 배기량 산출 보고서" : `[${this.value}] 국소배기장치 자체 점검 및 배기량 산출 보고서`;
         });
-
-        // 리사이즈 시 비율에 맞춰 선 다시 그리기
-        function resizeCanvas() {
-            if(document.getElementById('tab-exhaust').classList.contains('active')) {
-                canvas.width = container.clientWidth; 
-                canvas.height = container.clientHeight;
-                redrawCanvas(); 
-            }
-        }
-        window.addEventListener('resize', resizeCanvas);
 
         const velocityMap = {
             gaseous: { enclosed: 0.4, booth: 0.4, lateral: 0.5, downward: 0.5, upward: 1.0 },
             particulate: { enclosed: 0.7, booth: 0.7, lateral: 1.0, downward: 1.0, upward: 1.2 }
         };
 
-        function updateLegalVelocity() {
+        function updateFormLogic() {
             const state = document.querySelector('input[name="state"]:checked').value;
             const type = document.getElementById('hoodType').value;
+            const distInput = document.getElementById('hoodDistance');
+            
             document.getElementById('legalVelocity').value = velocityMap[state][type].toFixed(1);
+
+            if(type === 'enclosed' || type === 'booth') {
+                distInput.disabled = true; distInput.value = ''; distInput.placeholder = "포위/부스식 불필요";
+            } else {
+                distInput.disabled = false; distInput.placeholder = "예: 0.5";
+            }
         }
-        updateLegalVelocity();
+        updateFormLogic();
+
+        function toggleAreaInputs() {
+            const type = document.querySelector('input[name="areaType"]:checked').value;
+            const rectInputs = document.getElementById('rectInputs');
+            const circleInputs = document.getElementById('circleInputs');
+            const hoodArea = document.getElementById('hoodArea');
+
+            if (type === 'direct') {
+                rectInputs.style.display = 'none'; circleInputs.style.display = 'none';
+                hoodArea.readOnly = false;
+                if(!currentEditId) hoodArea.placeholder = "최종 개구면적 (m²)";
+            } else if (type === 'rect') {
+                rectInputs.style.display = 'flex'; circleInputs.style.display = 'none';
+                hoodArea.readOnly = true; hoodArea.placeholder = "자동 계산됨"; calculateArea();
+            } else if (type === 'circle') {
+                rectInputs.style.display = 'none'; circleInputs.style.display = 'flex';
+                hoodArea.readOnly = true; hoodArea.placeholder = "자동 계산됨"; calculateArea();
+            }
+        }
+
+        function calculateArea() {
+            const type = document.querySelector('input[name="areaType"]:checked').value;
+            const hoodArea = document.getElementById('hoodArea');
+            if (type === 'rect') {
+                const w = parseFloat(document.getElementById('rectW').value) || 0;
+                const h = parseFloat(document.getElementById('rectH').value) || 0;
+                if(w > 0 && h > 0) hoodArea.value = (w * h).toFixed(3); else hoodArea.value = '';
+            } else if (type === 'circle') {
+                const d_mm = parseFloat(document.getElementById('circleD').value) || 0;
+                if(d_mm > 0) hoodArea.value = (Math.PI * Math.pow(d_mm / 1000, 2) / 4).toFixed(3); else hoodArea.value = '';
+            }
+        }
+
+        // ==========================================
+        // [탭 1] 도면 엔진 (비율 좌표, Undo, 가이드선)
+        // ==========================================
+        function resizeCanvas() {
+            if(document.getElementById('tab-exhaust').classList.contains('active')) {
+                canvas.width = container.clientWidth; canvas.height = container.clientHeight; redrawCanvas(); 
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
 
         function toggleDrawMode() {
             isDrawingMode = !isDrawingMode;
-            document.getElementById('drawBtn').innerText = `도면 그리기 모드: ${isDrawingMode ? 'ON' : 'OFF'}`;
-            document.getElementById('modeIndicator').innerText = isDrawingMode ? "국소배기 배치도" : "현장 레이아웃 (Layout)";
-            isDrawingMode ? canvas.classList.add('canvas-drawing') : canvas.classList.remove('canvas-drawing');
+            const btn = document.getElementById('drawBtn'); const ind = document.getElementById('modeIndicator');
+            if (isDrawingMode) {
+                btn.innerText = `도면 그리기 모드: ON`; btn.style.backgroundColor = '#27ae60';
+                ind.innerText = "국소배기 배치도 (편집 중)";
+                canvas.classList.add('canvas-drawing'); container.classList.add('drawing-active');
+            } else {
+                btn.innerText = `도면 그리기 모드: OFF`; btn.style.backgroundColor = '#95a5a6';
+                ind.innerText = "현장 레이아웃 (Layout)";
+                canvas.classList.remove('canvas-drawing'); container.classList.remove('drawing-active');
+            }
         }
 
         function redrawCanvas() {
             if(!canvas.width || !canvas.height) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.setLineDash([]); 
             lines.forEach(line => { 
-                ctx.beginPath(); 
-                ctx.moveTo(line.x1 * canvas.width, line.y1 * canvas.height); 
-                ctx.lineTo(line.x2 * canvas.width, line.y2 * canvas.height); 
-                ctx.stroke(); 
+                ctx.beginPath(); ctx.moveTo(line.x1 * canvas.width, line.y1 * canvas.height); ctx.lineTo(line.x2 * canvas.width, line.y2 * canvas.height); ctx.stroke(); 
             });
         }
 
-        function getSnappedPoint(x, y) {
-            let sx = x, sy = y, min = SNAP_RADIUS;
+        function undoLastLine() { if (lines.length > 0) { lines.pop(); saveDataLocal(); redrawCanvas(); } }
+        document.addEventListener('keydown', function(event) { if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'Z')) { if (document.getElementById('tab-exhaust').classList.contains('active') && document.activeElement.tagName !== 'INPUT') { event.preventDefault(); undoLastLine(); } } });
+        function clearCanvas() { if(!confirm("도면과 모든 후드 데이터를 삭제하시겠습니까?")) return; lines = []; hoodData = []; nextId = 1; container.querySelectorAll('.hood-marker').forEach(e => e.remove()); saveDataLocal(); redrawCanvas(); updateStatusList(); cancelEdit(); }
+
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            let cx = 0, cy = 0;
+            if (e.changedTouches && e.changedTouches.length > 0) { cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; } 
+            else if (e.touches && e.touches.length > 0) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; } 
+            else if (e.clientX !== undefined) { cx = e.clientX; cy = e.clientY; } 
+            else { return { x: startX || 0, y: startY || 0 }; }
+            return { x: Math.max(0, Math.min(cx - rect.left, canvas.width)), y: Math.max(0, Math.min(cy - rect.top, canvas.height)) };
+        }
+
+        function getCalculatedPoint(rawX, rawY, originX, originY) {
+            let currentX = rawX, currentY = rawY;
+            if (originX !== undefined && originY !== undefined) {
+                let diffX = Math.abs(rawX - originX), diffY = Math.abs(rawY - originY);
+                if (diffX > diffY * 2.5) currentY = originY; else if (diffY > diffX * 2.5) currentX = originX;
+            }
+            let bestNode = null, bestGuideX = null, bestGuideY = null;
+            let minDistNode = SNAP_RADIUS, minDistX = SNAP_RADIUS, minDistY = SNAP_RADIUS;
+            
             for (let line of lines) {
-                const pts = [
-                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
-                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
-                ];
+                const pts = [ {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, {x: line.x2 * canvas.width, y: line.y2 * canvas.height} ];
                 for (let pt of pts) {
-                    const dist = Math.sqrt(Math.pow(pt.x - x, 2) + Math.pow(pt.y - y, 2));
-                    if (dist < min) { min = dist; sx = pt.x; sy = pt.y; }
+                    if (originX !== undefined && Math.abs(pt.x - originX) < 1 && Math.abs(pt.y - originY) < 1) continue;
+                    const dist = Math.sqrt(Math.pow(pt.x - currentX, 2) + Math.pow(pt.y - currentY, 2));
+                    if (dist < minDistNode) { minDistNode = dist; bestNode = pt; }
+                    if (Math.abs(pt.x - currentX) < minDistX) { minDistX = Math.abs(pt.x - currentX); bestGuideX = pt; }
+                    if (Math.abs(pt.y - currentY) < minDistY) { minDistY = Math.abs(pt.y - currentY); bestGuideY = pt; }
                 }
             }
-            return { x: sx, y: sy };
+            let isNodeSnapped = false, guideX = null, guideY = null;
+            if (bestNode) { currentX = bestNode.x; currentY = bestNode.y; isNodeSnapped = true; } 
+            else { if (bestGuideX) { currentX = bestGuideX.x; guideX = bestGuideX; } if (bestGuideY) { currentY = bestGuideY.y; guideY = bestGuideY; } }
+            return { x: currentX, y: currentY, guideX, guideY, isNodeSnapped };
         }
 
-        function undoLastLine() {
-            if (lines.length > 0) { lines.pop(); saveDataLocal(); redrawCanvas(); }
+        function startDrawing(e) { if (!isDrawingMode) return; isDrawing = true; const coords = getCoords(e); const calc = getCalculatedPoint(coords.x, coords.y); startX = calc.x; startY = calc.y; }
+        function drawMoving(e) {
+            if (!isDrawing) return; e.preventDefault(); const coords = getCoords(e); const calc = getCalculatedPoint(coords.x, coords.y, startX, startY); let currentX = calc.x, currentY = calc.y;
+            redrawCanvas();
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = '#f39c12'; ctx.lineWidth = 1.5;
+            if (calc.guideX) { ctx.beginPath(); ctx.moveTo(calc.guideX.x, calc.guideX.y); ctx.lineTo(currentX, currentY); ctx.stroke(); }
+            if (calc.guideY) { ctx.beginPath(); ctx.moveTo(calc.guideY.x, calc.guideY.y); ctx.lineTo(currentX, currentY); ctx.stroke(); }
+            ctx.setLineDash([]); 
+            if (calc.isNodeSnapped) { ctx.beginPath(); ctx.arc(currentX, currentY, 6, 0, Math.PI * 2); ctx.fillStyle = '#e74c3c'; ctx.fill(); }
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(currentX, currentY); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 4; ctx.stroke();
         }
-
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && (event.key === 'z' || event.key === 'Z')) {
-                if (document.getElementById('tab-exhaust').classList.contains('active') && document.activeElement.tagName !== 'INPUT') {
-                    undoLastLine();
-                }
-            }
-        });
-
-        function clearCanvas() { 
-            lines = []; hoodData = []; container.querySelectorAll('.hood-marker').forEach(e => e.remove());
-            saveDataLocal(); redrawCanvas(); updateStatusList(); 
-        }
-
-        function startPosition(e) { 
-            if (!isDrawingMode) return; isDrawing = true; 
-            const rect = canvas.getBoundingClientRect(); 
-            let rawX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; 
-            let rawY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top; 
-            const snapped = getSnappedPoint(rawX, rawY); startX = snapped.x; startY = snapped.y; 
-        }
-        
-        function drawLine(e) { 
-            if (!isDrawing) return; e.preventDefault(); 
-            const rect = canvas.getBoundingClientRect(); 
-            let rawX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; 
-            let rawY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top; 
-            let diffX = Math.abs(rawX - startX), diffY = Math.abs(rawY - startY); 
-            if (diffX > diffY * 2.5) rawY = startY; else if (diffY > diffX * 2.5) rawX = startX; 
-            
-            let cx = rawX, cy = rawY; let alignGuides = [];
-            for (let line of lines) {
-                const pts = [
-                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
-                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
-                ];
-                for (let pt of pts) {
-                    if (Math.abs(pt.x - startX) < 1 && Math.abs(pt.y - startY) < 1) continue;
-                    if (Math.abs(cx - pt.x) < ALIGN_RADIUS) { cx = pt.x; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
-                    if (Math.abs(cy - pt.y) < ALIGN_RADIUS) { cy = pt.y; alignGuides.push({x1: pt.x, y1: pt.y, x2: cx, y2: cy}); }
-                }
-            }
-            const snapped = getSnappedPoint(cx, cy); 
-            if (snapped.x !== cx || snapped.y !== cy) { cx = snapped.x; cy = snapped.y; alignGuides = []; }
-            
-            redrawCanvas(); 
-            
-            if (alignGuides.length > 0) {
-                ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 1.5; ctx.strokeStyle = '#f39c12';
-                ctx.beginPath(); for (let g of alignGuides) { ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); }
-                ctx.stroke(); ctx.restore();
-            }
-            if (cx !== rawX || cy !== rawY) { ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fillStyle = '#e74c3c'; ctx.fill(); } 
-            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(cx, cy); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 3; ctx.stroke(); 
-        }
-        
-        function stopPosition(e) { 
-            if (!isDrawing) return; isDrawing = false; 
-            const rect = canvas.getBoundingClientRect(); 
-            let rawX = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - rect.left; 
-            let rawY = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - rect.top; 
-            let diffX = Math.abs(rawX - startX), diffY = Math.abs(rawY - startY); 
-            if (diffX > diffY * 2.5) rawY = startY; else if (diffY > diffX * 2.5) rawX = startX; 
-            
-            let cx = rawX, cy = rawY;
-            for (let line of lines) {
-                const pts = [
-                    {x: line.x1 * canvas.width, y: line.y1 * canvas.height}, 
-                    {x: line.x2 * canvas.width, y: line.y2 * canvas.height}
-                ];
-                for (let pt of pts) {
-                    if (Math.abs(pt.x - startX) < 1 && Math.abs(pt.y - startY) < 1) continue;
-                    if (Math.abs(cx - pt.x) < ALIGN_RADIUS) cx = pt.x;
-                    if (Math.abs(cy - pt.y) < ALIGN_RADIUS) cy = pt.y;
-                }
-            }
-            const snapped = getSnappedPoint(cx, cy); let ex = snapped.x, ey = snapped.y; 
-            
-            // 🚀 선을 절대좌표가 아닌 비율(%) 좌표로 저장하여 인쇄/리사이즈 완벽 대응
-            if (Math.abs(ex - startX) > 5 || Math.abs(ey - startY) > 5) { 
-                lines.push({ 
-                    x1: startX / canvas.width, 
-                    y1: startY / canvas.height, 
-                    x2: ex / canvas.width, 
-                    y2: ey / canvas.height 
-                }); 
+        function stopDrawing(e) {
+            if (!isDrawing) return; isDrawing = false; const coords = getCoords(e); const calc = getCalculatedPoint(coords.x, coords.y, startX, startY); let endX = calc.x, endY = calc.y;
+            if (Math.abs(endX - startX) > 5 || Math.abs(endY - startY) > 5) { 
+                lines.push({ x1: startX / canvas.width, y1: startY / canvas.height, x2: endX / canvas.width, y2: endY / canvas.height }); 
                 saveDataLocal(); 
-            } 
+            }
             redrawCanvas(); 
         }
-        
-        canvas.addEventListener('mousedown', startPosition); canvas.addEventListener('mousemove', drawLine); canvas.addEventListener('mouseup', stopPosition); canvas.addEventListener('mouseleave', stopPosition);
-        canvas.addEventListener('touchstart', startPosition, {passive: false}); canvas.addEventListener('touchmove', drawLine, {passive: false}); canvas.addEventListener('touchend', stopPosition);
+
+        canvas.addEventListener('mousedown', startDrawing); window.addEventListener('mousemove', drawMoving); window.addEventListener('mouseup', stopDrawing); 
+        canvas.addEventListener('touchstart', startDrawing, {passive: false}); window.addEventListener('touchmove', drawMoving, {passive: false}); window.addEventListener('touchend', stopDrawing);
 
         // ==========================================
-        // 🚀 [핵심 수정 2] 마커 드래그 위치를 %로 완벽 저장
+        // [탭 1] 후드 마커 생성, 수정, 삭제 로직
         // ==========================================
+        function cancelEdit() {
+            currentEditId = null; const btn = document.getElementById('saveBtn'); btn.innerText = "도면에 배치 및 저장"; btn.style.backgroundColor = "var(--accent-color)";
+            document.getElementById('processName').value = ''; document.getElementById('rectW').value = ''; document.getElementById('rectH').value = ''; document.getElementById('circleD').value = ''; document.getElementById('hoodArea').value = '';
+            const type = document.getElementById('hoodType').value;
+            if(type !== 'enclosed' && type !== 'booth') document.getElementById('hoodDistance').value = '';
+            document.getElementById('measuredVelocity').value = '';
+        }
+
         function createMarkerElement(data) {
             const marker = document.createElement('div');
-            
             let shapeClass = 'shape-square'; 
-            if (data.type.includes('외부식')) shapeClass = 'shape-triangle'; 
-            else if (data.type.includes('부스식')) shapeClass = 'shape-circle'; 
+            if (data.typeVal.includes('enclosed') || data.typeVal.includes('booth')) {
+                shapeClass = data.typeVal === 'booth' ? 'shape-circle' : 'shape-square';
+            } else {
+                shapeClass = 'shape-triangle'; 
+            }
 
             marker.className = `hood-marker ${shapeClass}`;
+            marker.setAttribute('data-id', data.id); 
             marker.id = `marker-${data.id}`;
             marker.style.backgroundColor = data.result === '양호' ? '#3498db' : '#e74c3c';
             if(data.result !== '양호') marker.classList.add('marker-danger');
@@ -525,44 +610,26 @@
             marker.style.left = data.posX || '50%'; 
             marker.style.top = data.posY || '50%';
             marker.innerText = `H${data.id}`; 
-            marker.title = `[${data.process}] 측정: ${data.measured}m/s`;
+            marker.title = `[${data.process}] Q: ${data.qValue} m³/min`;
             
             function addDragLogic(el) {
                 let isDragging = false;
-                
                 const startDrag = (clientX, clientY) => {
-                    if(isDrawingMode) return;
-                    isDragging = true;
-                    const markerRect = el.getBoundingClientRect();
-                    const contRect = container.getBoundingClientRect();
-                    // 마커 정중앙 계산
-                    let markerCenterX = markerRect.left + markerRect.width / 2;
-                    let markerCenterY = markerRect.top + markerRect.height / 2;
-                    // 마우스와 중앙의 오프셋
-                    el.offsetX = clientX - markerCenterX;
-                    el.offsetY = clientY - markerCenterY;
+                    if(isDrawingMode) return; isDragging = true;
+                    const markerRect = el.getBoundingClientRect(); const contRect = container.getBoundingClientRect();
+                    let markerCenterX = markerRect.left + markerRect.width / 2; let markerCenterY = markerRect.top + markerRect.height / 2;
+                    el.offsetX = clientX - markerCenterX; el.offsetY = clientY - markerCenterY;
                 };
-
                 const onDrag = (clientX, clientY) => {
-                    if(!isDragging) return;
-                    const contRect = container.getBoundingClientRect();
-                    let centerX = (clientX - el.offsetX) - contRect.left;
-                    let centerY = (clientY - el.offsetY) - contRect.top;
-                    
-                    let leftPercent = (centerX / contRect.width) * 100;
-                    let topPercent = (centerY / contRect.height) * 100;
-                    
-                    leftPercent = Math.max(0, Math.min(100, leftPercent));
-                    topPercent = Math.max(0, Math.min(100, topPercent));
-                    
+                    if(!isDragging) return; const contRect = container.getBoundingClientRect();
+                    let centerX = (clientX - el.offsetX) - contRect.left; let centerY = (clientY - el.offsetY) - contRect.top;
+                    let leftPercent = Math.max(0, Math.min(100, (centerX / contRect.width) * 100));
+                    let topPercent = Math.max(0, Math.min(100, (centerY / contRect.height) * 100));
                     el.style.left = leftPercent + '%'; el.style.top = topPercent + '%';
                 };
-
                 const stopDrag = () => {
-                    if(!isDragging) return;
-                    isDragging = false;
-                    data.posX = el.style.left; data.posY = el.style.top;
-                    saveDataLocal();
+                    if(!isDragging) return; isDragging = false;
+                    data.posX = el.style.left; data.posY = el.style.top; saveDataLocal();
                 };
 
                 el.onmousedown = (e) => {
@@ -571,7 +638,6 @@
                     const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); stopDrag(); };
                     document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU);
                 };
-                
                 el.ontouchstart = (e) => {
                     if(isDrawingMode) return; startDrag(e.touches[0].clientX, e.touches[0].clientY);
                     const onTM = (ev) => { ev.preventDefault(); onDrag(ev.touches[0].clientX, ev.touches[0].clientY); };
@@ -579,8 +645,7 @@
                     document.addEventListener('touchmove', onTM, {passive: false}); document.addEventListener('touchend', onTE);
                 };
             }
-            addDragLogic(marker); 
-            container.appendChild(marker);
+            addDragLogic(marker); container.appendChild(marker);
         }
 
         function rebuildHoodMarkers() {
@@ -589,43 +654,106 @@
         }
 
         function addHoodToLayout() {
-            try {
-                const processName = document.getElementById('processName').value;
-                const measured = document.getElementById('measuredVelocity').value;
-                if (!processName) { alert("공정명을 입력해주세요."); return; }
-                if (!measured) { alert("측정 유속을 입력해주세요."); return; }
+            const processName = document.getElementById('processName').value;
+            const areaStr = document.getElementById('hoodArea').value;
+            const distStr = document.getElementById('hoodDistance').value;
+            const measuredStr = document.getElementById('measuredVelocity').value;
+            const typeSelect = document.getElementById('hoodType'); const typeValue = typeSelect.value;
+            
+            if (!processName) { alert("공정명을 입력해주세요."); return; }
+            if (!areaStr) { alert("개구면적(A)을 입력하거나 계산해주세요."); return; }
+            if (typeValue !== 'enclosed' && typeValue !== 'booth' && !distStr) { alert("외부식의 경우 오염원 거리(X)를 입력해야 합니다."); return; }
+            if (!measuredStr) { alert("측정 유속을 입력해주세요."); return; }
 
-                const state = document.querySelector('input[name="state"]:checked').value;
-                const typeSelect = document.getElementById('hoodType');
-                const legal = parseFloat(document.getElementById('legalVelocity').value);
-                const mVal = parseFloat(measured);
-                const isGood = mVal >= legal;
+            const stateValue = document.querySelector('input[name="state"]:checked').value;
+            const stateText = stateValue === 'gaseous' ? '가스상' : '입자상';
+            const typeText = typeSelect.options[typeSelect.selectedIndex].text.split(' (')[0]; 
+            
+            const A = parseFloat(areaStr); const X = distStr ? parseFloat(distStr) : 0;
+            const legalVc = parseFloat(document.getElementById('legalVelocity').value);
+            const measuredVc = parseFloat(measuredStr);
+            const isGood = measuredVc >= legalVc;
 
+            let requiredQ = 0;
+            if (typeValue === 'enclosed' || typeValue === 'booth') { requiredQ = A * legalVc * 60; } 
+            else { requiredQ = legalVc * (10 * Math.pow(X, 2) + A) * 60; }
+
+            if (currentEditId) {
+                const index = hoodData.findIndex(item => item.id === currentEditId);
+                if(index !== -1) {
+                    hoodData[index] = {
+                        ...hoodData[index], process: processName, stateVal: stateValue, state: stateText, typeVal: typeValue, type: typeText,
+                        area: A, distance: X, legal: legalVc.toFixed(1), measured: measuredVc.toFixed(2), qValue: requiredQ.toFixed(2), result: isGood ? '양호' : '미흡'
+                    };
+                    rebuildHoodMarkers(); // 도형이 변경될 수 있으므로 전체 다시 그림
+                }
+                cancelEdit(); 
+            } else {
                 const data = {
-                    id: hoodData.length > 0 ? Math.max(...hoodData.map(h=>h.id)) + 1 : 1, 
-                    process: processName, state: state === 'gaseous' ? '가스상' : '입자상',
-                    type: typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0], 
-                    legal: legal, measured: mVal.toFixed(2), result: isGood ? '양호' : '미흡',
+                    id: nextId++, process: processName, stateVal: stateValue, state: stateText, typeVal: typeValue, type: typeText,
+                    area: A, distance: X, legal: legalVc.toFixed(1), measured: measuredVc.toFixed(2), qValue: requiredQ.toFixed(2), result: isGood ? '양호' : '미흡',
                     posX: '50%', posY: '50%'
                 };
                 hoodData.push(data);
                 createMarkerElement(data);
-                updateStatusList();
-                saveDataLocal();
-                
-                document.getElementById('processName').value = ''; document.getElementById('measuredVelocity').value = '';
-            } catch(e) { alert("배치 오류: " + e.message); }
+                cancelEdit(); 
+            }
+            updateStatusList();
+            saveDataLocal();
+        }
+
+        function editHood(id) {
+            const h = hoodData.find(item => item.id === id); if(!h) return;
+            document.getElementById('processName').value = h.process;
+            document.querySelector(`input[name="state"][value="${h.stateVal}"]`).checked = true;
+            document.getElementById('hoodType').value = h.typeVal;
+            updateFormLogic(); 
+
+            document.querySelector('input[name="areaType"][value="direct"]').checked = true;
+            toggleAreaInputs();
+            document.getElementById('hoodArea').value = h.area;
+
+            if(h.typeVal !== 'enclosed' && h.typeVal !== 'booth') document.getElementById('hoodDistance').value = h.distance;
+            else document.getElementById('hoodDistance').value = '';
+            
+            document.getElementById('measuredVelocity').value = h.measured;
+
+            currentEditId = id;
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = `[H${id}] 수정 완료 (위치 유지)`; btn.style.backgroundColor = "#f39c12"; 
+        }
+
+        function deleteHood(id) {
+            if(!confirm(`H${id} 마커를 정말 삭제하시겠습니까?`)) return;
+            hoodData = hoodData.filter(h => h.id !== id);
+            const marker = document.querySelector(`.hood-marker[data-id="${id}"]`);
+            if(marker) marker.remove();
+            if(currentEditId === id) cancelEdit();
+            updateStatusList();
+            saveDataLocal();
         }
 
         function updateStatusList() {
             const list = document.getElementById('statusList'); const printBody = document.getElementById('printBody');
-            list.innerHTML = '<strong>현장 모니터링 목록</strong>'; printBody.innerHTML = '';
+            list.innerHTML = '<strong>현장 모니터링 및 배기량 목록</strong>'; printBody.innerHTML = '';
+
             hoodData.forEach(h => {
                 const card = document.createElement('div'); card.className = 'status-card'; card.id = `card-${h.id}`;
                 card.style.borderLeftColor = h.result === '양호' ? '#3498db' : '#e74c3c';
-                card.innerHTML = `[H${h.id}] <strong>${h.process}</strong> / ${h.type} <br> <span style="font-size:11px;color:#888;">법적기준: ${h.legal}m/s</span><br> <b>현재측정: <span id="val-${h.id}">${h.measured}</span>m/s</b> -> <b id="res-${h.id}" style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</b>`;
+                card.innerHTML = `
+                    <div>
+                        [H${h.id}] <strong>${h.process}</strong> / ${h.type} <br> 
+                        ▶ 풍속: 측정 <b id="val-${h.id}">${h.measured}</b> (법적 ${h.legal}) -> <b id="res-${h.id}" style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</b><br>
+                        ▶ 배기량(Q): <b id="qval-${h.id}">${h.qValue}</b> m³/min
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:5px; margin-left:5px;">
+                        <button class="btn-action" style="background:#f39c12; color:white; border:none; cursor:pointer; border-radius:3px;" onclick="editHood(${h.id})">수정</button>
+                        <button class="btn-action" style="background:#e74c3c; color:white; border:none; cursor:pointer; border-radius:3px;" onclick="deleteHood(${h.id})">삭제</button>
+                    </div>
+                `;
                 list.appendChild(card);
-                const tr = `<tr><td>${h.id}</td><td>${h.process}</td><td>${h.state}</td><td>${h.type}</td><td>${h.legal}</td><td id="pt-val-${h.id}">${h.measured}</td><td id="pt-res-${h.id}"><strong style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</strong></td></tr>`;
+
+                const tr = `<tr><td>${h.id}</td><td>${h.process}</td><td>${h.state}</td><td>${h.type}</td><td>${h.legal}</td><td id="pt-val-${h.id}">${h.measured}</td><td id="pt-q-${h.id}" style="font-weight:bold; background-color:#fef9e7;">${h.qValue}</td><td id="pt-res-${h.id}"><strong style="color:${h.result === '양호' ? '#3498db' : '#e74c3c'}">${h.result}</strong></td></tr>`;
                 printBody.innerHTML += tr;
             });
         }
@@ -634,17 +762,28 @@
             const btn = document.getElementById('iotBtn'); const status = document.getElementById('iotStatus');
             if (iotInterval) {
                 clearInterval(iotInterval); iotInterval = null;
-                btn.innerHTML = "📡 IoT 실시간 모니터링 시작"; btn.style.background = "var(--iot-color)"; status.style.display = "none";
+                btn.innerHTML = "📡 AI/CFD 기류 시뮬레이션 및 IoT 관제 시작"; btn.style.background = "var(--iot-color)"; status.style.display = "none";
             } else {
-                if(hoodData.length === 0) { alert("연동할 후드를 배치해주세요."); return; }
-                btn.innerHTML = "🛑 IoT 실시간 모니터링 중지"; btn.style.background = "#e74c3c"; status.style.display = "block";
+                if(hoodData.length === 0) { alert("연동할 후드를 먼저 배치해주세요."); return; }
+                btn.innerHTML = "🛑 시뮬레이션 및 관제 중지"; btn.style.background = "#e74c3c"; status.style.display = "block";
                 iotInterval = setInterval(() => {
                     hoodData.forEach(h => {
                         let change = (Math.random() * 0.1) - 0.05; let newVal = Math.max(0.1, parseFloat(h.measured) + change);
                         h.measured = newVal.toFixed(2); h.result = newVal >= parseFloat(h.legal) ? '양호' : '미흡(경고)';
-                        const marker = document.getElementById(`marker-${h.id}`); const valSpan = document.getElementById(`val-${h.id}`); const resSpan = document.getElementById(`res-${h.id}`); const card = document.getElementById(`card-${h.id}`);
+                        
+                        // 시뮬레이션: 측정값이 변하면 필요배기량 대비 "현재 배기량"으로 계산 업데이트
+                        // (간이 시뮬: 실제 Q_actual = A * 측정V * 60)
+                        let newQ = 0;
+                        if (h.typeVal === 'enclosed' || h.typeVal === 'booth') { newQ = h.area * newVal * 60; } 
+                        else { newQ = newVal * (10 * Math.pow(h.distance, 2) + h.area) * 60; }
+                        h.qValue = newQ.toFixed(2);
+
+                        const marker = document.getElementById(`marker-${h.id}`); const valSpan = document.getElementById(`val-${h.id}`); 
+                        const resSpan = document.getElementById(`res-${h.id}`); const qSpan = document.getElementById(`qval-${h.id}`);
+                        const card = document.getElementById(`card-${h.id}`);
+                        
                         if(marker && valSpan) {
-                            marker.title = `[${h.process}] 측정: ${h.measured}m/s`; valSpan.innerText = h.measured; resSpan.innerText = h.result;
+                            marker.title = `[${h.process}] Q: ${h.qValue} m³/min`; valSpan.innerText = h.measured; resSpan.innerText = h.result; qSpan.innerText = h.qValue;
                             if(h.result.includes('미흡')) { marker.style.backgroundColor = '#e74c3c'; marker.classList.add('marker-danger'); card.style.borderLeftColor = '#e74c3c'; resSpan.style.color = '#e74c3c'; } 
                             else { marker.style.backgroundColor = '#3498db'; marker.classList.remove('marker-danger'); card.style.borderLeftColor = '#3498db'; resSpan.style.color = '#3498db'; }
                         }
@@ -654,7 +793,7 @@
         }
 
         // ==========================================
-        // [탭 2, 3] 계산 로직 유지
+        // [탭 2, 3] 계산 로직
         // ==========================================
         function toggleSpaceInputs() {
             const type = document.getElementById('spaceType').value;
