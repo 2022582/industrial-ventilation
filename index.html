@@ -59,7 +59,7 @@
       const [factoryName, setFactoryName] = useState("");
       const [useLayout, setUseLayout] = useState(true); 
       const [nodes, setNodes] = useState([]);
-      const [edges, setEdges] = useState([]);
+      const [edges, setEdges] = useState([]); // 선 렌더링용 데이터 (이제 연결 판별에는 사용 안함)
       
       const [tool, setTool] = useState("select"); 
       const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -71,7 +71,7 @@
       const [drawingEdge, setDrawingEdge] = useState(null);
       const svgRef = useRef(null);
 
-      // 법정 제어풍속 산출 (KOSHA)
+      // KOSHA 기준 법정 제어풍속
       const getAutoControlVelocity = (type, state, isPermitted) => {
         if (type === 'enclosure' && isPermitted) return state === 'gas' ? 0.5 : 1.0;
         if (state === 'gas') {
@@ -85,7 +85,6 @@
         }
       };
 
-      // 마우스 좌표 및 스냅
       const getMousePos = (e) => {
         if (!useLayout || !svgRef.current) return { rawX: 0, rawY: 0, x: 0, y: 0 };
         const svg = svgRef.current;
@@ -100,18 +99,19 @@
       };
 
       const findSnapTarget = (rawX, rawY, excludeNodeId) => {
-        const snapNode = nodes.find(n => n.id !== excludeNodeId && Math.abs(n.x - rawX) < 20 && Math.abs(n.y - rawY) < 20);
-        if (snapNode) return { type: 'node', node: snapNode, x: snapNode.x, y: snapNode.y };
-
+        const nearbyNodes = nodes.filter(n => n.id !== excludeNodeId && Math.abs(n.x - rawX) < 20 && Math.abs(n.y - rawY) < 20);
+        if (nearbyNodes.length > 0) {
+          const mainNode = nearbyNodes.find(n => n.type !== 'joint');
+          const snapNode = mainNode || nearbyNodes[0];
+          return { type: 'node', node: snapNode, x: snapNode.x, y: snapNode.y };
+        }
         for (let e of edges) {
           if (e.from === excludeNodeId || e.to === excludeNodeId) continue;
           const fromNode = nodes.find(n => n.id === e.from);
           const toNode = nodes.find(n => n.id === e.to);
           if (!fromNode || !toNode) continue;
-
           const isHorizontal = Math.abs(fromNode.y - toNode.y) < 1;
           const isVertical = Math.abs(fromNode.x - toNode.x) < 1;
-
           if (isHorizontal && rawX >= Math.min(fromNode.x, toNode.x) && rawX <= Math.max(fromNode.x, toNode.x) && Math.abs(rawY - fromNode.y) < 20) 
             return { type: 'edge', edge: e, x: Math.round((rawX - 10) / 20) * 20 + 10, y: fromNode.y };
           else if (isVertical && rawY >= Math.min(fromNode.y, toNode.y) && rawY <= Math.max(fromNode.y, toNode.y) && Math.abs(rawX - fromNode.x) < 20) 
@@ -120,7 +120,6 @@
         return null;
       };
 
-      // 생성 함수
       const createHood = (x = 110, y = 110) => {
         const newNode = {
           id: `hood-${Date.now()}`, type: 'hood', x, y,
@@ -129,7 +128,8 @@
             hoodType: "enclosure", materialState: "gas", isPermitted: false, distanceX: 0, 
             controlVelocity: 0.4, measuredControlVelocity: "", shape: "rect",
             width: "", height: "", diameter: "", measuredVelocity: "",
-            openingWidth: "", openingHeight: "", manualFanId: ""
+            openingWidth: "", openingHeight: "", 
+            manualFanName: "" // ✅ 도면 선 연결 로직 폐기 -> 텍스트 명칭 연결
           }
         };
         setNodes([...nodes, newNode]);
@@ -151,7 +151,6 @@
       const handlePointerDown = (e) => {
         if (!useLayout) return;
         const { x, y } = getMousePos(e);
-        
         if (tool === 'select') {
           setSelectedNodeId(null); setSelectedEdgeId(null);
         } else if (tool === 'hood') {
@@ -207,20 +206,37 @@
         if (draggingNodeId || draggingEdgeId) { setDraggingNodeId(null); setDraggingEdgeId(null); return; }
         if (!drawingEdge) return;
         
-        let newNodes = [...nodes], newEdges = [...edges], lastEndId = drawingEdge.startNodeId;
+        let { x, y, rawX, rawY } = getMousePos(e);
+        const startNode = nodes.find(n => n.id === drawingEdge.startNodeId);
+        if (!startNode) return;
 
-        if (drawingEdge.cornerX !== null) {
-          const cornerNode = { id: `joint-${Date.now()}-c`, type: 'joint', x: drawingEdge.cornerX, y: drawingEdge.cornerY, data: {} };
+        const isHorizontal = Math.abs(rawX - startNode.x) > Math.abs(rawY - startNode.y);
+        let currentX = isHorizontal ? x : startNode.x, currentY = isHorizontal ? startNode.y : y;
+        let cornerX = null, cornerY = null;
+        let finalSnapTarget = findSnapTarget(rawX, rawY, startNode.id);
+
+        if (finalSnapTarget) {
+          currentX = finalSnapTarget.x; currentY = finalSnapTarget.y;
+          if (startNode.x !== currentX && startNode.y !== currentY) {
+            cornerX = isHorizontal ? currentX : startNode.x; 
+            cornerY = isHorizontal ? startNode.y : currentY;
+          }
+        }
+
+        let newNodes = [...nodes], newEdges = [...edges], lastEndId = startNode.id;
+
+        if (cornerX !== null) {
+          const cornerNode = { id: `joint-${Date.now()}-c`, type: 'joint', x: cornerX, y: cornerY, data: {} };
           newNodes.push(cornerNode); newEdges.push({ id: `edge-${Date.now()}-c`, from: lastEndId, to: cornerNode.id });
           lastEndId = cornerNode.id;
         }
 
         let targetNodeId;
-        if (drawingEdge.snapTarget) {
-          if (drawingEdge.snapTarget.type === 'node') targetNodeId = drawingEdge.snapTarget.node.id;
+        if (finalSnapTarget) {
+          if (finalSnapTarget.type === 'node') targetNodeId = finalSnapTarget.node.id;
           else {
-            const splitEdge = drawingEdge.snapTarget.edge;
-            const splitJoint = { id: `joint-${Date.now()}-s`, type: 'joint', x: drawingEdge.x, y: drawingEdge.y, data: {} };
+            const splitEdge = finalSnapTarget.edge;
+            const splitJoint = { id: `joint-${Date.now()}-s`, type: 'joint', x: currentX, y: currentY, data: {} };
             newNodes.push(splitJoint);
             newEdges = newEdges.filter(e => e.id !== splitEdge.id);
             newEdges.push({ id: `edge-${Date.now()}-s1`, from: splitEdge.from, to: splitJoint.id });
@@ -228,7 +244,7 @@
             targetNodeId = splitJoint.id;
           }
         } else {
-          const endJoint = { id: `joint-${Date.now()}-e`, type: 'joint', x: drawingEdge.x, y: drawingEdge.y, data: {} };
+          const endJoint = { id: `joint-${Date.now()}-e`, type: 'joint', x: currentX, y: currentY, data: {} };
           newNodes.push(endJoint); targetNodeId = endJoint.id;
         }
 
@@ -288,7 +304,6 @@
         }
       };
 
-      // 배기량 계산 로직
       const calculateResult = (data) => {
         const { hoodType, distanceX, controlVelocity, measuredControlVelocity, shape, width, height, diameter, measuredVelocity, openingWidth, openingHeight } = data;
         let area = shape === 'rect' ? (parseFloat(width) || 0) * (parseFloat(height) || 0) : Math.PI * Math.pow(((parseFloat(diameter) || 0) / 1000) / 2, 2);
@@ -298,39 +313,30 @@
         let requiredQ = hoodType === 'enclosure' ? 60 * vc * openingArea : 60 * vc * (10 * Math.pow(x, 2) + area);
         const currentQ = 60 * vm * area;
 
+        const isVelocityGood = vmc >= vc;
+        const isVolumeGood = currentQ >= requiredQ;
+        const isGood = isVelocityGood && isVolumeGood && currentQ > 0;
+
         return { 
           area: area.toFixed(3), openingArea: openingArea.toFixed(3), 
           requiredQ: requiredQ.toFixed(2), currentQ: currentQ.toFixed(2), 
-          isVelocityGood: vmc >= vc, isVolumeGood: currentQ >= requiredQ, isGood: vmc >= vc && currentQ >= requiredQ && currentQ > 0 
+          isVelocityGood, isVolumeGood, isGood 
         };
       };
 
-      // 그래프 탐색으로 후드와 연결된 송풍기 찾기 (BFS)
+      // ✅ 후드 데이터 맵핑 (도면 BFS 추적 폐기, 오로지 manualFanName 텍스트 기준으로만 매칭) ✅
       const hoodsData = useMemo(() => {
-        const getConnectedFan = (startId) => {
-          let visited = new Set(), queue = [startId];
-          visited.add(startId);
-          while(queue.length > 0) {
-            let curr = queue.shift();
-            let node = nodes.find(n => n.id === curr);
-            if (node && node.type === 'fan') return node;
-            let neighbors = edges.filter(e => e.from === curr || e.to === curr).map(e => e.from === curr ? e.to : e.from);
-            for(let n of neighbors) if(!visited.has(n)) { visited.add(n); queue.push(n); }
-          }
-          return null;
-        };
-
         return nodes.filter(n => n.type === 'hood').map(n => {
           const calc = calculateResult(n.data);
-          let connectedFan = useLayout ? getConnectedFan(n.id) : (nodes.find(fn => fn.type === 'fan' && fn.id === n.data.manualFanId) || null);
-          return { ...n, calc, connectedFan };
+          return { ...n, calc };
         });
-      }, [nodes, edges, useLayout]);
+      }, [nodes]);
 
-      // 송풍기 효율 및 밸런스 계산
+      // ✅ 송풍기 데이터 맵핑 (수동 지정된 명칭으로 묶기) ✅
       const fansData = useMemo(() => {
         return nodes.filter(n => n.type === 'fan').map(fan => {
-          const connectedHoods = hoodsData.filter(h => h.connectedFan?.id === fan.id);
+          // 후드에 적혀있는 manualFanName과 이 송풍기의 fanName이 동일하면 연결된 것으로 간주!
+          const connectedHoods = hoodsData.filter(h => h.data.manualFanName && h.data.manualFanName.trim() === fan.data.fanName.trim());
           const sumCurrentQ = connectedHoods.reduce((sum, h) => sum + parseFloat(h.calc.currentQ || 0), 0);
           
           const rQ = parseFloat(fan.data.ratedQ) || 0, mQ = parseFloat(fan.data.measuredQ) || 0;
@@ -350,11 +356,10 @@
       const selectedNode = nodes.find(n => n.id === selectedNodeId);
       const selectedNodeCalc = selectedNode?.type === 'hood' ? calculateResult(selectedNode.data) : null;
       
-      // 통계 계산 (후드)
+      // 통계 계산 (후드 & 송풍기)
       const totalHoods = hoodsData.length, goodHoods = hoodsData.filter(h => h.calc.isGood).length, badHoods = totalHoods - goodHoods;
       const pieDashArray = totalHoods > 0 ? (goodHoods / totalHoods) * 100 : 0;
 
-      // 통계 계산 (송풍기)
       const evaluatedFans = fansData.filter(f => f.calc.status !== '-');
       const totalEvalFans = evaluatedFans.length;
       const goodFans = evaluatedFans.filter(f => f.calc.status === '양호').length;
@@ -366,7 +371,7 @@
       return (
         <div className="flex flex-col lg:flex-row h-screen bg-slate-100 font-sans text-slate-800 overflow-hidden print:block print:h-auto print:overflow-visible">
           
-          {/* 좌측 패널 (인쇄 시 숨김) */}
+          {/* 좌측 패널 */}
           <div className="w-full lg:w-[400px] flex-shrink-0 bg-white border-r border-slate-200 shadow-xl z-10 flex flex-col h-full print:hidden">
             <div className="p-4 bg-blue-800 text-white flex justify-between items-center">
               <div>
@@ -379,7 +384,6 @@
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              
               <div>
                 <h2 className="text-sm font-bold text-slate-400 mb-2">1. 기본 정보 설정</h2>
                 <div className="relative mb-3">
@@ -388,7 +392,6 @@
                     value={factoryName} onChange={e => setFactoryName(e.target.value)}
                     className="w-full pl-10 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" />
                 </div>
-                
                 <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-slate-700">도면(Lay-out) 사용</span>
@@ -410,7 +413,6 @@
                 <div>
                   <h2 className="text-sm font-bold text-slate-400 mb-2 flex justify-between items-center">
                     2. Lay-out (도면) 도구
-                    <span className="text-xs font-normal text-slate-500">우측 캔버스에 클릭하여 배치</span>
                   </h2>
                   <div className="grid grid-cols-4 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
                     <button onClick={() => setTool('select')} className={`flex flex-col items-center p-2 rounded ${tool === 'select' ? 'bg-blue-100 text-blue-700 border-blue-300 border' : 'hover:bg-slate-200'}`}>
@@ -479,7 +481,6 @@
                     {selectedEdgeId ? '배관(직선)이 선택되었습니다.' : '배관 조인트가 선택되었습니다.'}
                   </div>
                 ) : selectedNode.type === 'fan' ? (
-                  /* ✅ 송풍기 제원 입력 폼 ✅ */
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                     <div>
                       <label className="block text-xs font-bold mb-1">송풍기 명칭</label>
@@ -516,7 +517,6 @@
                         </div>
                       </div>
                     </div>
-                    {/* 송풍기 효율 평가 박스 */}
                     {(() => {
                       const fData = fansData.find(f => f.id === selectedNode.id);
                       if (!fData || !fData.data.ratedQ) return null;
@@ -529,24 +529,29 @@
                     })()}
                   </div>
                 ) : (
-                  /* ✅ 후드 제원 입력 폼 ✅ */
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                    
+                    {/* ✅ 연결 송풍기 자유 입력(또는 선택) 영역 (항상 노출) ✅ */}
+                    <div className="bg-indigo-50 p-2.5 rounded border border-indigo-200 shadow-sm mb-4">
+                      <label className="block text-[10px] font-bold mb-1 text-indigo-700">연결 송풍기 명칭 (입력 시 자동 그룹화)</label>
+                      <input 
+                        type="text" 
+                        list="fan-list" 
+                        placeholder="예: 송풍기-1 (미입력 시 미연결)" 
+                        value={selectedNode.data.manualFanName || ""} 
+                        onChange={e => updateNodeData('manualFanName', e.target.value)} 
+                        className="w-full p-2 border border-indigo-300 rounded text-sm font-bold outline-none bg-white text-indigo-900" 
+                      />
+                      <datalist id="fan-list">
+                        {nodes.filter(n => n.type === 'fan').map(f => <option key={f.id} value={f.data.fanName} />)}
+                      </datalist>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-bold mb-1">공정명</label>
                       <input type="text" value={selectedNode.data.processName} onChange={e => updateNodeData('processName', e.target.value)}
                         className="w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-blue-500" />
                     </div>
-
-                    {!useLayout && (
-                      <div className="bg-indigo-50 p-2 rounded border border-indigo-200">
-                        <label className="block text-[10px] font-bold mb-1 text-indigo-700">연결될 송풍기 선택 (수동 지정)</label>
-                        <select value={selectedNode.data.manualFanId || ""} onChange={e => updateNodeData('manualFanId', e.target.value)}
-                                className="w-full p-2 border border-indigo-300 rounded text-xs outline-none bg-white">
-                          <option value="">-- 송풍기 선택 안함 --</option>
-                          {nodes.filter(n => n.type === 'fan').map(f => <option key={f.id} value={f.id}>{f.data.fanName}</option>)}
-                        </select>
-                      </div>
-                    )}
 
                     <div>
                       <label className="block text-xs font-bold mb-1">현장 사진</label>
@@ -589,7 +594,7 @@
                       <input type="checkbox" id={`permit-${selectedNode.id}`} checked={selectedNode.data.isPermitted || false} onChange={e => updateNodeData('isPermitted', e.target.checked)} disabled={selectedNode.data.hoodType !== 'enclosure'}
                         className={`w-4 h-4 rounded focus:ring-red-500 ${selectedNode.data.hoodType === 'enclosure' ? 'text-red-600 border-red-300' : 'text-slate-400 border-slate-300'}`} />
                       <label htmlFor={`permit-${selectedNode.id}`} className={`text-xs font-bold select-none ${selectedNode.data.hoodType === 'enclosure' ? 'text-red-700 cursor-pointer' : 'text-slate-500 cursor-not-allowed'}`}>
-                        허가대상 유해물질 취급 (포위식/부스식 전용)
+                        허가대상 유해물질 취급 (포위식 전용)
                       </label>
                     </div>
 
@@ -688,7 +693,8 @@
               {/* 도면 렌더링 */}
               {useLayout && (
                 <div className="mb-8 print:mb-6 page-break-inside-avoid">
-                  <h2 className="text-lg font-black border-l-4 border-blue-600 pl-2 mb-3">1. 설비 Lay-out (Network)</h2>
+                  {/* ✅ 명칭 반영 완료 ✅ */}
+                  <h2 className="text-lg font-black border-l-4 border-blue-600 pl-2 mb-3">1. 공정 Lay-out</h2>
                   <div className={`w-full h-[400px] bg-slate-50 border-2 ${tool === 'select' ? 'border-slate-300' : 'border-blue-400 border-dashed'} rounded-xl relative overflow-hidden print:border-slate-300 print:bg-white print:border-solid`}>
                     <svg ref={svgRef} className={`w-full h-full ${tool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
                          onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
@@ -738,16 +744,11 @@
                         );
                       })}
                     </svg>
-                    {nodes.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none print:hidden">
-                        <div className="bg-white/80 p-4 rounded-lg font-bold text-slate-500 flex flex-col items-center gap-2"><MousePointer2 className="w-8 h-8 opacity-50" />도구를 이용해 설계도를 작성하세요.</div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
 
-              {/* 후드 성능 테이블 */}
+              {/* ✅ 수동 연결 텍스트 기준 완벽한 표 병합 (rowSpan) ✅ */}
               <div className="mb-8">
                 <div className="flex justify-between items-end border-l-4 border-blue-600 pl-2 mb-3 page-break-inside-avoid">
                   <h2 className="text-lg font-black">{useLayout ? '2.' : '1.'} 후드 배기 및 제어풍속 결과</h2>
@@ -760,7 +761,8 @@
                       <thead>
                         <tr className="bg-slate-100 text-slate-700">
                           <th className="border border-slate-300 p-2 text-center w-8">No</th>
-                          <th className="border border-slate-300 p-2 text-center w-20">현장 사진</th>
+                          <th className="border border-slate-300 p-2 text-center w-24">연결 송풍기</th>
+                          <th className="border border-slate-300 p-2 text-center w-16">사진</th>
                           <th className="border border-slate-300 p-2 text-left">공정명 / 형식</th>
                           <th className="border border-slate-300 p-2 text-center w-24">제어풍속 (m/s)<br/><span className="text-[9px] text-slate-500">측정 / 법정</span></th>
                           <th className="border border-slate-300 p-2 text-center w-24">배기량 (CMM)<br/><span className="text-[9px] text-slate-500">현재 / 필요</span></th>
@@ -768,36 +770,103 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {hoodsData.map((hood, idx) => {
-                          const { data, calc, connectedFan } = hood;
-                          const typeLabel = data.hoodType === 'enclosure' ? '포위식' : data.hoodType === 'ext_up' ? '외부식 상방' : data.hoodType === 'ext_side' ? '외부식 측방' : '외부식 하방';
-                          const permitLabel = (data.hoodType === 'enclosure' && data.isPermitted) ? '(허가대상)' : '';
-                          return (
-                            <tr key={hood.id} className={`${calc.isGood ? 'bg-blue-50/30' : 'bg-red-50/30'} page-break-inside-avoid`}>
-                              <td className="border border-slate-300 p-2 text-center font-bold text-slate-500">{idx + 1}</td>
-                              <td className="border border-slate-300 p-1 text-center align-middle">
-                                {data.photo ? <img src={data.photo} alt="현장" className="w-16 h-10 object-cover mx-auto rounded shadow-sm print:w-20 print:h-12" /> : <span className="text-[9px] text-slate-400">사진없음</span>}
-                              </td>
-                              <td className="border border-slate-300 p-2">
-                                <div className="font-bold text-slate-800">{data.processName}</div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">
-                                  {typeLabel} | {data.materialState === 'gas' ? '가스상' : '입자상'} <span className="text-red-500">{permitLabel}</span>
-                                  {connectedFan && <span className="ml-1 text-indigo-600 font-bold">[연결: {connectedFan.data.fanName}]</span>}
-                                  <div className="mt-1">{data.hoodType === 'enclosure' ? `개구 A=${calc.openingArea}㎡ | 측정부 A=${calc.area}㎡` : `측정부 A=${calc.area}㎡`}</div>
-                                </div>
-                              </td>
-                              <td className="border border-slate-300 p-2 text-center">
-                                <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVelocityGood ? 'text-blue-600' : 'text-red-600'}`}>{data.measuredControlVelocity || '0'}</span><hr className="w-8 my-0.5 border-slate-300" /><span className="text-slate-500">{data.controlVelocity || '0'}</span></div>
-                              </td>
-                              <td className="border border-slate-300 p-2 text-center">
-                                <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVolumeGood ? 'text-blue-600' : 'text-red-600'}`}>{calc.currentQ}</span><hr className="w-10 my-0.5 border-slate-300" /><span className="text-slate-500">{calc.requiredQ}</span></div>
-                              </td>
-                              <td className="border border-slate-300 p-2 text-center font-black">
-                                {calc.isGood ? <span className="text-blue-600 flex flex-col items-center"><CheckCircle2 className="w-4 h-4 mb-1"/>양호</span> : <span className="text-red-600 flex flex-col items-center"><XCircle className="w-4 h-4 mb-1"/>불량</span>}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {(() => {
+                          let globalIdx = 1;
+                          const rows = [];
+                          
+                          // 입력된 송풍기 텍스트를 기준으로 완벽히 그룹화
+                          const groupedHoods = {};
+                          const unassignedHoods = [];
+
+                          hoodsData.forEach(hood => {
+                            const fName = hood.data.manualFanName && hood.data.manualFanName.trim() !== "" ? hood.data.manualFanName.trim() : null;
+                            if (fName) {
+                              if (!groupedHoods[fName]) groupedHoods[fName] = [];
+                              groupedHoods[fName].push(hood);
+                            } else {
+                              unassignedHoods.push(hood);
+                            }
+                          });
+
+                          // 그룹화된(연결된) 후드들 병합 출력
+                          Object.keys(groupedHoods).forEach(fanName => {
+                            const hoodsInGroup = groupedHoods[fanName];
+                            hoodsInGroup.forEach((hood, hIdx) => {
+                              const { data, calc } = hood;
+                              const typeLabel = data.hoodType === 'enclosure' ? '포위식' : data.hoodType === 'ext_up' ? '외부 상방' : data.hoodType === 'ext_side' ? '외부 측방' : '외부 하방';
+                              const permitLabel = (data.hoodType === 'enclosure' && data.isPermitted) ? '(허가)' : '';
+                              
+                              rows.push(
+                                <tr key={hood.id} className={`${calc.isGood ? 'bg-white' : 'bg-red-50/30'} page-break-inside-avoid`}>
+                                  <td className="border border-slate-300 p-2 text-center font-bold text-slate-500">{globalIdx++}</td>
+                                  
+                                  {/* 첫 번째 행에서만 송풍기 이름을 출력하고 나머지 칸 병합 */}
+                                  {hIdx === 0 && (
+                                    <td rowSpan={hoodsInGroup.length} className="border border-slate-300 p-2 text-center align-middle font-black text-indigo-700 bg-indigo-50/30">
+                                      {fanName}
+                                    </td>
+                                  )}
+
+                                  <td className="border border-slate-300 p-1 text-center align-middle">
+                                    {data.photo ? <img src={data.photo} alt="현장" className="w-12 h-8 object-cover mx-auto rounded shadow-sm print:w-16 print:h-10" /> : <span className="text-[9px] text-slate-400">없음</span>}
+                                  </td>
+                                  <td className="border border-slate-300 p-2">
+                                    <div className="font-bold text-slate-800">{data.processName}</div>
+                                    <div className="text-[10px] text-slate-500 mt-0.5">
+                                      {typeLabel} <span className="text-red-500">{permitLabel}</span>
+                                      <div className="mt-1">{data.hoodType === 'enclosure' ? `개구 A=${calc.openingArea}㎡ | 측정부 A=${calc.area}㎡` : `측정부 A=${calc.area}㎡`}</div>
+                                    </div>
+                                  </td>
+                                  <td className="border border-slate-300 p-2 text-center">
+                                    <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVelocityGood ? 'text-blue-600' : 'text-red-600'}`}>{data.measuredControlVelocity || '0'}</span><hr className="w-8 my-0.5 border-slate-300" /><span className="text-slate-500">{data.controlVelocity || '0'}</span></div>
+                                  </td>
+                                  <td className="border border-slate-300 p-2 text-center">
+                                    <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVolumeGood ? 'text-blue-600' : 'text-red-600'}`}>{calc.currentQ}</span><hr className="w-10 my-0.5 border-slate-300" /><span className="text-slate-500">{calc.requiredQ}</span></div>
+                                  </td>
+                                  <td className="border border-slate-300 p-2 text-center font-black">
+                                    {calc.isGood ? <span className="text-blue-600">양호</span> : <span className="text-red-600">불량</span>}
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          });
+
+                          // 미연결 후드들 출력
+                          unassignedHoods.forEach(hood => {
+                            const { data, calc } = hood;
+                            const typeLabel = data.hoodType === 'enclosure' ? '포위식' : data.hoodType === 'ext_up' ? '외부 상방' : data.hoodType === 'ext_side' ? '외부 측방' : '외부 하방';
+                            const permitLabel = (data.hoodType === 'enclosure' && data.isPermitted) ? '(허가)' : '';
+                            rows.push(
+                              <tr key={hood.id} className={`${calc.isGood ? 'bg-white' : 'bg-red-50/30'} page-break-inside-avoid`}>
+                                <td className="border border-slate-300 p-2 text-center font-bold text-slate-500">{globalIdx++}</td>
+                                <td className="border border-slate-300 p-2 text-center align-middle font-bold text-slate-400 bg-slate-50/50">
+                                  미연결
+                                </td>
+                                <td className="border border-slate-300 p-1 text-center align-middle">
+                                  {data.photo ? <img src={data.photo} alt="현장" className="w-12 h-8 object-cover mx-auto rounded shadow-sm print:w-16 print:h-10" /> : <span className="text-[9px] text-slate-400">없음</span>}
+                                </td>
+                                <td className="border border-slate-300 p-2">
+                                  <div className="font-bold text-slate-800">{data.processName}</div>
+                                  <div className="text-[10px] text-slate-500 mt-0.5">
+                                    {typeLabel} <span className="text-red-500">{permitLabel}</span>
+                                    <div className="mt-1">{data.hoodType === 'enclosure' ? `개구 A=${calc.openingArea}㎡ | 측정부 A=${calc.area}㎡` : `측정부 A=${calc.area}㎡`}</div>
+                                  </div>
+                                </td>
+                                <td className="border border-slate-300 p-2 text-center">
+                                  <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVelocityGood ? 'text-blue-600' : 'text-red-600'}`}>{data.measuredControlVelocity || '0'}</span><hr className="w-8 my-0.5 border-slate-300" /><span className="text-slate-500">{data.controlVelocity || '0'}</span></div>
+                                </td>
+                                <td className="border border-slate-300 p-2 text-center">
+                                  <div className="flex flex-col items-center"><span className={`font-bold ${calc.isVolumeGood ? 'text-blue-600' : 'text-red-600'}`}>{calc.currentQ}</span><hr className="w-10 my-0.5 border-slate-300" /><span className="text-slate-500">{calc.requiredQ}</span></div>
+                                </td>
+                                <td className="border border-slate-300 p-2 text-center font-black">
+                                  {calc.isGood ? <span className="text-blue-600">양호</span> : <span className="text-red-600">불량</span>}
+                                </td>
+                              </tr>
+                            );
+                          });
+
+                          return rows;
+                        })()}
                       </tbody>
                     </table>
                   </div>
@@ -859,7 +928,7 @@
                 </div>
               )}
 
-              {/* ✅ 사업장 종합 평가 (후드 + 송풍기 통합 요약) ✅ */}
+              {/* ✅ 사업장 종합 평가 (나란한 파이차트 유지) ✅ */}
               {(hoodsData.length > 0 || fansData.length > 0) && (
                 <div className="border-t-2 border-slate-800 pt-6 mt-6 page-break-inside-avoid">
                   <h2 className="text-lg font-black border-l-4 border-blue-600 pl-2 mb-4">
@@ -867,7 +936,6 @@
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6 bg-slate-50 border border-slate-200 rounded-xl p-6">
                     
-                    {/* 후드 종합 평가 */}
                     {hoodsData.length > 0 && (
                       <div className="flex items-center justify-center gap-6">
                         <div className="relative w-28 h-28 transform -rotate-90">
@@ -899,7 +967,6 @@
                       </div>
                     )}
 
-                    {/* 송풍기 종합 평가 */}
                     {fansData.length > 0 && (
                       <div className={`flex items-center justify-center gap-4 ${hoodsData.length > 0 ? 'border-t md:border-t-0 print:border-t-0 md:border-l print:border-l border-slate-200 pt-6 md:pt-0 print:pt-0 pl-0 md:pl-4 print:pl-4' : ''}`}>
                         <div className="relative w-28 h-28 transform -rotate-90">
