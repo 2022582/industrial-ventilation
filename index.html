@@ -43,17 +43,30 @@
     const Upload = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
     const Share2 = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>;
 
-    // KOSHA 작업종류별 환기 표준 가이드 데이터
+    // KOSHA 작업종류별 환기 표준 가이드 데이터 (PDF 30~71p 기반 확장)
     const KOSHA_GUIDES = [
-      { id: 'steam_small', title: '증기세척기 (소형)', desc: '제어풍속 0.5 ~ 1.0 m/s 이상 확보. 개구면적을 최소화하고 측방/하방 흡인 방식 권장.' },
-      { id: 'steam_large', title: '증기세척기 (중대형)', desc: '제어풍속 1.0 m/s 이상 확보. 작업물 인양 시 증기 비산을 막기 위한 포위식 후드 또는 부스 형태 권장.' },
-      { id: 'dipping', title: '디핑(Dipping) 세척기', desc: '제어풍속 0.5 ~ 1.0 m/s (유기용제 취급 시 1.0m/s 이상). 슬롯형 후드 설치 시 세척조 길이에 맞게 균일한 흡인 설계 필요.' },
-      { id: 'wipe', title: '와이프(Wipe) 세척기', desc: '제어풍속 0.5 m/s 이상. 하방 흡인식 테이블 후드 또는 작업대 밀착형 측방 흡인식 적용 권장.' },
-      { id: 'wet_process', title: '습식가공공정', desc: '가공 중 발생하는 미스트 및 증기가 작업자 호흡기 내로 유입되지 않도록 포위식 또는 밀착형 외부식 후드 설치. 오일미스트 필터 적용 권장.' },
-      { id: 'plating', title: '도금작업', desc: '제어풍속 0.5 ~ 1.0 m/s (푸쉬풀 후드 권장). 흄 및 미스트 발생량이 많으므로 부식 방지 재질(PVC/FRP 등) 사용 필수.' },
-      { id: 'welding', title: '용접작업', desc: '제어풍속 0.5 ~ 1.0 m/s 이상. 플렉시블(국소배기) 암 후드 사용 시 용접점으로부터 30cm 이내 위치시켜 흄(Fume) 포집 극대화.' },
-      { id: 'fumehood', title: '실험실 흄후드', desc: '제어풍속 0.4 ~ 0.5 m/s (샤시 개방 시 기준). 샤시 높이 조절에 따른 풍속 변화 방지를 위해 VAV 시스템 권장.' },
-      { id: 'powder', title: '분체투입/혼합작업', desc: '제어풍속 1.0 ~ 1.2 m/s. 포위식 후드를 기본으로 하되, 작업자 호흡기 방향으로 분진이 비산되지 않도록 설계.' }
+      { id: 'us_small', title: '초음파 세척기(소형)', desc: '세척조 상부에 포위식 또는 외부식 후드 설치. 제어풍속 0.5 ~ 1.0 m/s 이상 확보. 증기 비산 방지를 위해 덮개 사용 권장.' },
+      { id: 'us_medium', title: '초음파 세척기(중형)', desc: '포위식 후드를 기본으로 하며 측방 또는 하방 흡인 방식 적용. 개구면적을 최소화하고 제어풍속 0.5 ~ 1.0 m/s 이상 확보.' },
+      { id: 'us_large', title: '초음파 세척기(대형)', desc: '작업물이 크므로 개방된 상부에 푸쉬풀(Push-pull) 형태 또는 양측면 슬롯형 후드 적용 권장. 제어풍속 1.0 m/s 이상 확보.' },
+      { id: 'steam_small', title: '증기 세척기(소형)', desc: '밀폐식 또는 포위식 후드 설치. 작업 구역 내 제어풍속 0.5 ~ 1.0 m/s 이상 확보. 응축 영역(Freeboard) 유지 관리.' },
+      { id: 'steam_large', title: '증기 세척기(중대형)', desc: '작업물 인양 시 증기 비산을 막기 위한 포위식 후드 또는 부스 형태 권장. 슬롯형 적용 시 제어풍속 1.0 m/s 이상 확보.' },
+      { id: 'dipping', title: '디핑(Dipping) 세척기', desc: '제어풍속 0.5 ~ 1.0 m/s (유기용제 취급 시 1.0m/s 이상). 슬롯형 후드 설치 시 세척조 길이에 맞게 균일한 흡인 설계(플레넘) 필요.' },
+      { id: 'wipe', title: '와이프(Wipe) 세척기', desc: '하방 흡인식 테이블 후드 또는 작업대 밀착형 측방 흡인식 적용 권장. 작업자 호흡기 보호를 위해 제어풍속 0.5 m/s 이상 확보.' },
+      { id: 'paint_booth', title: '도장작업 (스프레이 부스)', desc: '하방, 측방 또는 교차 기류 방식의 부스(Booth) 형태 적용. 제어풍속 0.4 ~ 0.5 m/s (유해물질에 따라 0.5m/s 이상) 확보 및 급배기 밸런스 유지.' },
+      { id: 'plating', title: '도금작업', desc: '제어풍속 0.5 ~ 1.0 m/s. 조 폭이 넓을 경우 푸쉬풀(Push-pull) 후드 권장. 흄/미스트 발생량이 많으므로 부식 방지 재질(PVC/FRP 등) 사용 필수.' },
+      { id: 'degreasing', title: '탈지 및 산세작업', desc: '도금작업에 준하는 슬롯형 측방흡인 또는 포위식 후드 적용. 고농도 산성 증기 발생을 고려하여 제어풍속 1.0 m/s 이상 확보 권장.' },
+      { id: 'drying', title: '건조작업', desc: '건조로 출입구 및 상부에 캐노피형 또는 포위식 후드 설치. 열 상승 기류를 고려하여 제어풍속 0.5 ~ 1.0 m/s 확보.' },
+      { id: 'printing', title: '인쇄작업', desc: '잉크/세척제 증발부에 포위식 또는 외부식 후드 밀착 설치. 작업대 전체를 덮는 부스 형태 고려, 제어풍속 0.5 m/s 이상 확보.' },
+      { id: 'leather', title: '피혁가공공정', desc: '접착제 및 유기용제 사용 구간에 국소배기장치 설치. 포위식 또는 측방 외부식 적용, 제어풍속 0.5 m/s 이상 확보.' },
+      { id: 'wet_process', title: '습식가공공정 (CNC 등)', desc: '가공 중 발생하는 미스트 및 증기가 작업자 호흡기 내로 유입되지 않도록 기계 밀폐형 또는 포위식 후드 설치. 오일미스트 필터 적용 필수.' },
+      { id: 'mix_liquid', title: '배합 및 혼합작업 (액상)', desc: '교반기/배합기 투입구 및 개방부에 포위식 후드 설치. 덮개 개방 시 유해물질 비산 방지를 위해 제어풍속 0.5 ~ 1.0 m/s 확보.' },
+      { id: 'mix_powder', title: '배합 및 혼합작업 (분체)', desc: '분진 비산을 막기 위해 포위식/부스식 적용. 기류가 작업자에서 발생원으로 향하도록 제어풍속 1.0 ~ 1.2 m/s 이상 확보.' },
+      { id: 'powder_pack', title: '분체투입 및 포장작업', desc: '투입/포장구 주변에 포위식 부스 또는 슬롯형 후드 설치. 분진의 비산속도를 이겨낼 수 있도록 제어풍속 1.0 ~ 1.2 m/s 이상 확보.' },
+      { id: 'cutting_grind', title: '절단 및 연마작업', desc: '고속 회전체에 의한 분진 비산 방향을 고려하여 포위식 또는 하방/측방 외부식 후드 설치. 제어풍속 1.2 m/s 이상 (미세분진 시 강화).' },
+      { id: 'woodwork', title: '목공작업', desc: '톱밥 및 목재 분진 포집을 위해 톱날 하부 및 가공부에 밀착형 포위식 후드 설치. 덕트 내 퇴적 방지를 위해 반송속도 15 m/s 이상 유지.' },
+      { id: 'casting', title: '주물작업 (용해/주입)', desc: '용해로 상부에 열 상승 기류를 포집하는 수전형(캐노피) 또는 측방 후드 설치. 제어풍속 1.0 ~ 1.2 m/s 이상 (유해 흄 발생 시 상향 조정).' },
+      { id: 'fumehood', title: '실험실 흄후드', desc: '제어풍속 0.4 ~ 0.5 m/s (샤시 개방면적 기준). 샤시 높이 조절에 따른 챔버 내 난기류 및 풍속 변화 방지를 위해 VAV 시스템 또는 바이패스 설계.' },
+      { id: 'welding', title: '용접작업', desc: '플렉시블(국소배기) 암 후드를 용접 발생점으로부터 30cm 이내에 위치시켜 흄 포집 극대화. 부스식/포위식 적용 시 제어풍속 0.5 ~ 1.0 m/s 이상.' }
     ];
 
     function App() {
@@ -991,7 +1004,7 @@
                   <div className="pb-6 mt-6 border-t border-slate-200 pt-6">
                     <h2 className="text-sm font-bold text-slate-400 mb-2">5. KOSHA 환기 표준 가이드 첨부</h2>
                     <p className="text-[10px] text-slate-500 mb-3">보고서에 첨부할 해당 사업장의 작업 종류를 다중 선택하세요.</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {KOSHA_GUIDES.map(guide => {
                         const isSelected = selectedGuides.includes(guide.id);
                         return (
@@ -1004,8 +1017,8 @@
                             className={`p-2 text-xs font-bold text-left rounded border transition-colors ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-300'}`}
                           >
                             <div className="flex items-center gap-1.5">
-                              {isSelected ? <CheckCircle2 className="w-3 h-3" /> : <Square className="w-3 h-3 text-slate-300" />}
-                              {guide.title}
+                              {isSelected ? <CheckCircle2 className="w-3 h-3 flex-shrink-0" /> : <Square className="w-3 h-3 text-slate-300 flex-shrink-0" />}
+                              <span className="truncate">{guide.title}</span>
                             </div>
                           </button>
                         );
