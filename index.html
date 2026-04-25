@@ -25,7 +25,9 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-        .touch-none-svg { touch-action: none; }
+        
+        /* 모바일 터치 액션 제어 (서명 패드 등) */
+        .touch-none { touch-action: none; }
         
         /* 스크롤바 숨기기 (대시보드 내부 요소용) */
         .hide-scroll::-webkit-scrollbar { display: none; }
@@ -36,11 +38,12 @@
         .page-break-after-always { page-break-after: always !important; break-after: page !important; }
         .cover-page { padding-top: 2.5rem; padding-bottom: 2.5rem; margin-bottom: 3rem; }
 
+        /* --- 인쇄 및 PDF 생성 시 스타일 --- */
         @media print {
             @page { size: A4 portrait; margin: 15mm 10mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; font-size: 11pt !important; color: black !important; overflow: visible !important; }
             .print-hide, #dashboard-sidebar { display: none !important; }
-            /* 최상위 래퍼(#app-container)를 포함하여 모든 요소의 높이 제약을 해제 */
+            /* 최상위 래퍼를 포함하여 모든 요소의 높이 제약을 해제 */
             html, body, #root, #app-container, #app-content, #dashboard-main, .print-force-block { display: block !important; height: auto !important; min-height: auto !important; max-height: none !important; width: 100% !important; max-width: none !important; overflow: visible !important; position: static !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;}
             #tool-container { display: block !important; gap: 0 !important; padding: 0 !important; }
             #input-panel, #mobile-nav-scroll { display: none !important; }
@@ -55,7 +58,7 @@
             .pdf-layout-container { border-color: #cbd5e1 !important; background-color: white !important; border-style: solid !important; }
         }
 
-        /* PDF 생성 시 1장만 잘리는 이슈 방지용 (스크롤 제약 임시 완전 해제) */
+        /* PDF 생성 시 임시 화면 레이아웃 완전 해제 */
         .pdf-generating,
         .pdf-generating body,
         .pdf-generating #app-container,
@@ -76,22 +79,11 @@
         .pdf-generating #input-panel,
         .pdf-generating #mobile-nav-scroll,
         .pdf-generating header,
-        .pdf-generating .print-hide {
-            display: none !important;
-        }
-        .pdf-generating #tool-container {
-            padding: 0 !important;
-        }
-        .pdf-generating #report-panel {
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            width: 100% !important;
-            background: white !important;
-        }
+        .pdf-generating .print-hide { display: none !important; }
+        .pdf-generating #tool-container { padding: 0 !important; }
+        .pdf-generating #report-panel { padding: 0 !important; border: none !important; box-shadow: none !important; width: 100% !important; background: white !important; }
         .pdf-generating .cover-page { padding-top: 20mm !important; padding-bottom: 10mm !important; height: auto !important; min-height: 260mm !important; margin-bottom: 0 !important; }
         .pdf-generating .pdf-layout-container { border-color: #cbd5e1 !important; background-color: white !important; border-style: solid !important; }
-
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col relative text-slate-800">
@@ -103,7 +95,7 @@
     <script type="text/babel">
         const { useState, useRef, useEffect, useMemo } = React;
 
-        // --- 아이콘 컴포넌트 (SVG) ---
+        // --- SVG 아이콘 컴포넌트 ---
         const Factory = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>;
         const MousePointer2 = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>;
         const Fan = ({className, x, y, width, height}) => <svg className={className||""} x={x} y={y} width={width||24} height={height||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><path d="M12 12v.01"/></svg>;
@@ -120,15 +112,15 @@
         const Share2 = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>;
         const SearchIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
         const HomeIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-        const StarIcon = ({className, fill}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
         const InfoIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
         const LayoutIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>;
         const ZapIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
         const EditIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
         const FileTextIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
         const Edit2Icon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
+        const AlertTriangle = ({className, x, y, width, height}) => <svg className={className||""} x={x} y={y} width={width||24} height={height||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
 
-        // KOSHA 작업종류별 환기 표준 가이드 데이터
+        // --- KOSHA 가이드라인 데이터 ---
         const KOSHA_GUIDES = [
             { id: 'us_small', title: '초음파 세척기(소형)', desc: '세척조 상부에 포위식 또는 외부식 후드 설치. 제어풍속 0.5 ~ 1.0 m/s 이상 확보. 증기 비산 방지를 위해 덮개 사용 권장.' },
             { id: 'us_medium', title: '초음파 세척기(중형)', desc: '포위식 후드를 기본으로 하며 측방 또는 하방 흡인 방식 적용. 개구면적을 최소화하고 제어풍속 0.5 ~ 1.0 m/s 이상 확보.' },
@@ -154,7 +146,7 @@
             { id: 'welding', title: '용접작업', desc: '플렉시블(국소배기) 암 후드를 용접 발생점으로부터 30cm 이내에 위치시켜 흄 포집 극대화. 부스식/포위식 적용 시 제어풍속 0.5 ~ 1.0 m/s 이상.' }
         ];
 
-        // 새로운 메뉴 구조
+        // --- 앱 메뉴 ---
         const APP_MENUS = [
             { id: 'info', label: '사업장 현황', icon: <InfoIcon className="w-5 h-5"/> },
             { id: 'layout', label: 'Lay-out', icon: <LayoutIcon className="w-5 h-5"/> },
@@ -164,37 +156,47 @@
             { id: 'guide', label: '가이드라인 첨부', icon: <FileTextIcon className="w-5 h-5"/> },
         ];
 
+        // --- 메인 컴포넌트 ---
         function App() {
+            // [State] UI & 알림
             const [toastMessage, setToastMessage] = useState("");
-            
             const showAlert = (msg) => {
                 setToastMessage(msg);
                 setTimeout(() => setToastMessage(""), 3000);
             };
 
-            // 기본 정보
+            // 오늘 날짜 구하기 (YYYY-MM-DD 형식)
+            const getLocalToday = () => {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            };
+
+            // [State] 사업장 및 기본 정보
             const [factoryName, setFactoryName] = useState("");
             const [representativeName, setRepresentativeName] = useState("");
+            const [industryType, setIndustryType] = useState(""); // 추가: 업종
             const [address, setAddress] = useState("");
+            const [measurementDate, setMeasurementDate] = useState(getLocalToday()); // 추가: 측정 시작일
+            const [measurementDuration, setMeasurementDuration] = useState("1"); // 추가: 측정 기간
             const [useLayout, setUseLayout] = useState(true); 
             const [overallReview, setOverallReview] = useState("");
             const [overallReviewImage, setOverallReviewImage] = useState(null);
 
-            // --- 서명(결재란) 상태 ---
+            // [State] 서명(결재란)
             const [signatures, setSignatures] = useState({ evaluator: null, manager: null, worker: null });
             const [signModal, setSignModal] = useState({ isOpen: false, role: null });
             const signCanvasRef = useRef(null);
             const isDrawingRef = useRef(false);
             
-            // 다중 선택
+            // [State] 가이드 선택
             const [selectedGuides, setSelectedGuides] = useState([]);
             const [guidePhotos, setGuidePhotos] = useState({});
             
-            // 도면 데이터
+            // [State] 도면 데이터 (Nodes, Edges)
             const [nodes, setNodes] = useState([]);
             const [edges, setEdges] = useState([]); 
             
-            // 도구 및 상태
+            // [State] 도면 에디터 도구 및 선택 상태
             const [tool, setTool] = useState("select"); 
             const [selectedNodeId, setSelectedNodeId] = useState(null);
             const [selectedEdgeId, setSelectedEdgeId] = useState(null);
@@ -202,15 +204,8 @@
             const [draggingEdgeId, setDraggingEdgeId] = useState(null);
             const [drawingEdge, setDrawingEdge] = useState(null);
             
-            // AI 스마트 진단 상태
+            // [State] 진단 및 평가 데이터
             const [smartDiagnostics, setSmartDiagnostics] = useState([]);
-
-            // 네비게이션 및 모바일 상태
-            const [mobileTab, setMobileTab] = useState('edit');
-            const [activeMenu, setActiveMenu] = useState('info'); // 좌측 메인 탭 상태
-            const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-            
-            // 육안 및 기류 평가
             const [evaluationData, setEvaluationData] = useState({
                 visual: { hoodApp: '양호', hoodInst: '양호', ductApp: '양호', ductConn: '양호', ductDamper: '양호', ductExhaust: '양호', purifierApp: '양호', purifierPress: '양호', purifierConn: '양호', fanApp: '양호', fanBelt: '양호', fanConn: '양호' },
                 visualTargets: {}, 
@@ -218,6 +213,11 @@
                 airflowTargets: []
             });
 
+            // [State] 화면 제어
+            const [mobileTab, setMobileTab] = useState('edit');
+            const [activeMenu, setActiveMenu] = useState('info');
+            const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+            
             const visualGroups = [
                 { name: '후드', items: [ { id: 'hoodApp', name: '외관', desc: '부식, 변형 등이 없이 최초 설치 상태를 유지' }, { id: 'hoodInst', name: '설치상태', desc: '개구면 주변 방해물이 없이 발생원 비산방향으로 설치' } ]},
                 { name: '덕트·\n배기구', items: [ { id: 'ductApp', name: '외관', desc: '부식, 변형 등 외관상태 점검' }, { id: 'ductConn', name: '접속부', desc: '접속부 파손, 변형으로 인한 공기 유입여부 등' }, { id: 'ductDamper', name: '댐퍼', desc: '댐퍼의 손상 및 정상작동 유무 등' }, { id: 'ductExhaust', name: '배기구', desc: '배출공기 작업장 재유입 가능 여부 등' } ]},
@@ -228,7 +228,7 @@
             const svgRef = useRef(null);
             const fileInputRef = useRef(null);
 
-            // 브라우저 기본 인쇄 감지
+            // [Effect] 브라우저 기본 인쇄 감지하여 CSS 클래스 추가
             useEffect(() => {
                 const beforePrint = () => document.documentElement.classList.add('pdf-generating');
                 const afterPrint = () => document.documentElement.classList.remove('pdf-generating');
@@ -240,12 +240,9 @@
                 };
             }, []);
 
-            const updateEval = (category, field, value) => {
-                setEvaluationData(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
-            };
-
+            // --- 데이터 저장 및 불러오기 ---
             const handleSaveFile = () => {
-                const data = { factoryName, representativeName, address, useLayout, overallReview, overallReviewImage, selectedGuides, guidePhotos, nodes, edges, evaluationData, smartDiagnostics, signatures };
+                const data = { factoryName, representativeName, industryType, address, measurementDate, measurementDuration, useLayout, overallReview, overallReviewImage, selectedGuides, guidePhotos, nodes, edges, evaluationData, smartDiagnostics, signatures };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -266,7 +263,10 @@
                         if (data && data.nodes) {
                             setFactoryName(data.factoryName || "");
                             setRepresentativeName(data.representativeName || "");
+                            setIndustryType(data.industryType || ""); // 업종 불러오기
                             setAddress(data.address || "");
+                            setMeasurementDate(data.measurementDate || getLocalToday()); // 측정일 불러오기
+                            setMeasurementDuration(data.measurementDuration || "1"); // 측정기간 불러오기
                             setOverallReview(data.overallReview || "");
                             setOverallReviewImage(data.overallReviewImage || null);
                             setSelectedGuides(data.selectedGuides || []);
@@ -295,49 +295,53 @@
                 reader.readAsText(file);
             };
 
+            // --- PDF 공유 및 출력 ---
             const handleSharePDF = async () => {
                 setMobileTab('report'); 
                 setIsGeneratingPDF(true);
                 document.documentElement.classList.add('pdf-generating');
                 
-                setTimeout(async () => {
-                    const element = document.getElementById('report-content-wrapper');
-                    if(!window.html2pdf) {
-                        showAlert("PDF 라이브러리를 불러오고 있습니다. 잠시 후 다시 시도해주세요.");
-                        setIsGeneratingPDF(false);
-                        document.documentElement.classList.remove('pdf-generating');
-                        return;
-                    }
-                    const opt = {
-                        margin:       [15, 10, 15, 10], 
-                        filename:     `국소배기보고서_${factoryName || '사업장'}.pdf`,
-                        image:        { type: 'jpeg', quality: 1 },
-                        html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1024 },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                        pagebreak:    { mode: ['css', 'legacy'] }
-                    };
-
-                    try {
-                        const pdfBlob = await window.html2pdf().set(opt).from(element).outputPdf('blob');
-                        const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            await navigator.share({
-                                title: '국소배기장치 성능평가 보고서',
-                                text: `${factoryName || '사업장'} 국소배기장치 성능평가 보고서입니다.`,
-                                files: [file]
-                            });
-                        } else {
-                            window.html2pdf().set(opt).from(element).save();
-                            showAlert("파일이 다운로드 되었습니다.");
+                // DOM 업데이트 대기를 위해 setTimeout을 이중으로 활용하여 안정성 증대
+                setTimeout(() => {
+                    requestAnimationFrame(async () => {
+                        const element = document.getElementById('report-content-wrapper');
+                        if(!window.html2pdf) {
+                            showAlert("PDF 라이브러리를 불러오고 있습니다. 잠시 후 다시 시도해주세요.");
+                            setIsGeneratingPDF(false);
+                            document.documentElement.classList.remove('pdf-generating');
+                            return;
                         }
-                    } catch(err) {
-                        console.error(err);
-                        showAlert("PDF 생성 중 오류가 발생했습니다.");
-                    } finally {
-                        setIsGeneratingPDF(false);
-                        document.documentElement.classList.remove('pdf-generating');
-                    }
-                }, 500); 
+                        const opt = {
+                            margin:       [15, 10, 15, 10], 
+                            filename:     `국소배기보고서_${factoryName || '사업장'}.pdf`,
+                            image:        { type: 'jpeg', quality: 1 },
+                            html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1024 },
+                            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                            pagebreak:    { mode: ['css', 'legacy'] }
+                        };
+
+                        try {
+                            const pdfBlob = await window.html2pdf().set(opt).from(element).outputPdf('blob');
+                            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                    title: '국소배기장치 성능평가 보고서',
+                                    text: `${factoryName || '사업장'} 국소배기장치 성능평가 보고서입니다.`,
+                                    files: [file]
+                                });
+                            } else {
+                                window.html2pdf().set(opt).from(element).save();
+                                showAlert("파일이 다운로드 되었습니다.");
+                            }
+                        } catch(err) {
+                            console.error(err);
+                            showAlert("PDF 생성 중 오류가 발생했습니다.");
+                        } finally {
+                            setIsGeneratingPDF(false);
+                            document.documentElement.classList.remove('pdf-generating');
+                        }
+                    });
+                }, 800); // 렌더링 지연 시간 약간 증가시켜 안정성 확보
             };
 
             const handlePrint = () => {
@@ -345,11 +349,15 @@
                 document.documentElement.classList.add('pdf-generating');
                 setTimeout(() => {
                     window.print();
+                    document.documentElement.classList.remove('pdf-generating'); // 인쇄 취소/완료 후 복구
                 }, 500);
             };
 
             // --- Canvas 서명 핸들러 ---
             const startDrawingSignature = (e) => {
+                // 터치 스크롤 방지 (중요)
+                e.preventDefault();
+                
                 const canvas = signCanvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const rect = canvas.getBoundingClientRect();
@@ -371,7 +379,9 @@
             };
 
             const drawSignature = (e) => {
+                e.preventDefault();
                 if (!isDrawingRef.current) return;
+                
                 const canvas = signCanvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const rect = canvas.getBoundingClientRect();
@@ -385,7 +395,8 @@
                 ctx.stroke();
             };
 
-            const stopDrawingSignature = () => {
+            const stopDrawingSignature = (e) => {
+                if(e) e.preventDefault();
                 isDrawingRef.current = false;
             };
 
@@ -402,6 +413,11 @@
                 setSignModal({ isOpen: false, role: null });
             };
 
+            // --- 계산 및 로직 유틸리티 ---
+            const updateEval = (category, field, value) => {
+                setEvaluationData(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
+            };
+
             const getAutoControlVelocity = (type, state, isPermitted) => {
                 if (type === 'enclosure' && isPermitted) return state === 'gas' ? 0.5 : 1.0;
                 if (state === 'gas') {
@@ -415,6 +431,7 @@
                 }
             };
 
+            // --- SVG 도면 핸들러 ---
             const getMousePos = (e) => {
                 if (!useLayout || !svgRef.current) return { rawX: 0, rawY: 0, x: 0, y: 0 };
                 const svg = svgRef.current;
@@ -477,6 +494,15 @@
                 setSelectedNodeId(newNode.id);
             };
 
+            const createHazard = (x = 110, y = 210) => {
+                const newNode = {
+                    id: `hazard-${Date.now()}`, type: 'hazard', x, y,
+                    data: { processName: "", hazardName: "" }
+                };
+                setNodes([...nodes, newNode]);
+                setSelectedNodeId(newNode.id);
+            };
+
             const handlePointerDown = (e) => {
                 if (!useLayout) return;
                 const { x, y } = getMousePos(e);
@@ -486,6 +512,8 @@
                     createHood(x, y); setTool('select');
                 } else if (tool === 'fan') {
                     createFan(x, y); setTool('select');
+                } else if (tool === 'hazard') {
+                    createHazard(x, y); setTool('select');
                 } else if (tool === 'line') {
                     const snapTarget = findSnapTarget(x, y, null);
                     let startNodeId = snapTarget && snapTarget.type === 'node' ? snapTarget.node.id : (() => {
@@ -609,6 +637,7 @@
                 }
             };
 
+            // --- 노드 데이터 업데이트 및 계산 로직 ---
             const updateNodeData = (field, value) => {
                 if (!selectedNodeId) return;
                 setNodes(nodes.map(n => {
@@ -642,7 +671,7 @@
                 }
             };
             
-            // 데이터 계산 로직
+            // 데이터 연산 Memoization
             const calculateResult = (data) => {
                 const { hoodType, distanceX, controlVelocity, measuredControlVelocity, shape, width, height, diameter, measuredVelocity, openingWidth, openingHeight } = data;
                 let area = shape === 'rect' ? (parseFloat(width) || 0) * (parseFloat(height) || 0) : Math.PI * Math.pow(((parseFloat(diameter) || 0) / 1000) / 2, 2);
@@ -674,7 +703,7 @@
                 return nodes.filter(n => n.type === 'fan').map(fan => {
                     const connectedHoods = hoodsData.filter(h => h.data.manualFanName && h.data.manualFanName.trim() === fan.data.fanName.trim());
                     const sumCurrentQ = connectedHoods.reduce((sum, h) => sum + parseFloat(h.calc.currentQ || 0), 0);
-                    const sumRequiredQ = connectedHoods.reduce((sum, h) => sum + parseFloat(h.calc.requiredQ || 0), 0); // 필요 배기량 합계
+                    const sumRequiredQ = connectedHoods.reduce((sum, h) => sum + parseFloat(h.calc.requiredQ || 0), 0); 
                     
                     const rQ = parseFloat(fan.data.ratedQ) || 0, mQ = parseFloat(fan.data.measuredQ) || 0;
                     const eff = rQ > 0 ? (mQ / rQ) * 100 : 0;
@@ -694,17 +723,19 @@
             const runSmartDiagnostics = () => {
                 let diagnostics = [];
                 
-                if (hoodsData.length === 0 && fansData.length === 0) {
+                const hazardNodes = nodes.filter(n => n.type === 'hazard');
+                
+                if (hoodsData.length === 0 && fansData.length === 0 && hazardNodes.length === 0) {
                     setSmartDiagnostics([{
                         type: 'system', name: '데이터 부족', status: 'info',
-                        issues: ['입력된 후드 및 송풍기 데이터가 없습니다.'],
-                        solutions: ['Lay-out 메뉴 또는 목록에서 후드와 송풍기를 추가하고 제원을 상세히 입력해 주세요.'],
+                        issues: ['입력된 후드, 송풍기 또는 유해물질 데이터가 없습니다.'],
+                        solutions: ['Lay-out 메뉴 또는 목록에서 객체를 추가하고 제원을 상세히 입력해 주세요.'],
                         references: []
                     }]);
                     return;
                 }
 
-                // 1. 후드 성능 진단 (종합 그룹화)
+                // 1. 후드 성능 진단
                 let hoodIssueMap = {
                     velocity: { hoods: [], issue: "측정 제어풍속 미달", sols: new Set(), refs: new Set() },
                     volume: { hoods: [], issue: "필요 배기량 대비 현재 배기량 부족", sols: new Set(), refs: new Set() },
@@ -769,7 +800,6 @@
                         references: Array.from(hoodIssueMap.particle.refs)
                     });
                 }
-                
                 if (goodHoodsList.length > 0) {
                     diagnostics.push({
                         type: 'hood', name: '기준 만족', status: 'success', issues: [],
@@ -778,7 +808,27 @@
                     });
                 }
 
-                // 2. 육안평가 및 기류평가 종합 진단
+                // 1-5. 국소배기장치 미설치(유해물질) 공정 진단
+                if (hazardNodes.length > 0) {
+                    let issues = [];
+                    hazardNodes.forEach(h => {
+                        const pName = h.data.processName || '미상 공정';
+                        const hName = h.data.hazardName || '미상 유해물질';
+                        issues.push(`[${pName}] 공정은 관리대상 유해물질(${hName})을 취급하고 있으나, 현재 국소배기장치가 미설치된 상태입니다.`);
+                    });
+
+                    diagnostics.push({
+                        type: 'system', name: '국소배기장치 미설치 공정', status: 'danger',
+                        issues: issues,
+                        solutions: [
+                            '작업자 건강 장해 예방 및 산업안전보건법령 준수를 위해, 해당 공정의 비산 특성에 맞는 적절한 국소배기장치(포위식 또는 외부식 후드 등)를 조속히 신규 설치할 것을 강력히 권고합니다.',
+                            '설비 신설 전까지는 전체환기장치 가동을 극대화하고, 작업자에게 적격한 호흡용 보호구(방독마스크 등)를 반드시 지급 및 착용토록 관리하시기 바랍니다.'
+                        ],
+                        references: ['산업안전보건기준에 관한 규칙 제422조 (관리대상 유해물질과 관련된 설비의 배기장치)']
+                    });
+                }
+
+                // 2. 육안평가 종합 진단
                 let visualIssuesGrouped = {};
                 visualGroups.forEach(group => {
                     group.items.forEach(item => {
@@ -813,6 +863,7 @@
                     });
                 }
 
+                // 3. 기류 평가 진단
                 if (evaluationData.airflow.status === '미흡') {
                     const targetNames = (evaluationData.airflowTargets || []).map(id => {
                         const node = nodes.find(n => n.id === id);
@@ -833,7 +884,7 @@
                     });
                 }
 
-                // 3. 송풍기 효율 및 필요배기량 합산 비교 진단
+                // 4. 송풍기 효율 및 배기량 진단
                 fansData.forEach(fan => {
                     const { data, calc } = fan;
                     let issues = [];
@@ -852,7 +903,6 @@
                         }
                     }
 
-                    // 필요 배기량 합산 vs 송풍기 유량 비교 로직
                     const fanCapacity = parseFloat(data.measuredQ) > 0 ? parseFloat(data.measuredQ) : parseFloat(data.ratedQ);
                     if (fanCapacity > 0 && calc.sumRequiredQ > fanCapacity) {
                         issues.push(`연결된 후드들의 법정 필요 배기량 합계(${calc.sumRequiredQ.toFixed(1)} CMM)가 현재 송풍기 용량(${fanCapacity.toFixed(1)} CMM)보다 큽니다.`);
@@ -892,7 +942,7 @@
             const fanGoodPct = totalEvalFans > 0 ? (goodFans / totalEvalFans) * 100 : 0;
             const fanFairPct = totalEvalFans > 0 ? (fairFans / totalEvalFans) * 100 : 0;
 
-            // 출력용 목차 번호 자동 셋팅
+            // 출력용 목차 번호 자동 생성
             let sNum = 1;
             const sIdx = {
                 layout: useLayout ? sNum++ : null,
@@ -932,7 +982,8 @@
                                     {signModal.role === 'evaluator' ? '평가자' : signModal.role === 'manager' ? '보건관리자' : '근로자 대표'} 서명
                                 </h3>
                                 <p className="text-xs text-slate-500 mb-3 font-medium">아래 영역에 마우스나 터치로 서명해 주세요.</p>
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl mb-5 bg-slate-50 overflow-hidden touch-none relative">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl mb-5 bg-slate-50 overflow-hidden relative">
+                                    {/* touch-none 클래스 적용 및 이벤트 제어 추가 */}
                                     <canvas
                                         ref={signCanvasRef}
                                         width={400}
@@ -942,6 +993,7 @@
                                         onPointerMove={drawSignature}
                                         onPointerUp={stopDrawingSignature}
                                         onPointerLeave={stopDrawingSignature}
+                                        style={{ touchAction: 'none' }} // 강제 스크롤 방지
                                     />
                                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10 text-2xl font-black tracking-widest select-none">
                                         SIGN HERE
@@ -960,9 +1012,8 @@
 
                     <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileUpload} />
 
-                    {/* Left Sidebar (Desktop Only) - Navigation */}
+                    {/* Left Sidebar (Desktop Only) */}
                     <aside id="dashboard-sidebar" className="hidden lg:flex flex-col w-64 xl:w-72 bg-white border-r border-slate-200 z-20 flex-shrink-0 h-full shadow-sm print-hide">
-                        {/* Profile Block */}
                         <div className="bg-[#3b82f6] text-white p-5 flex items-center gap-3">
                             <div className="w-12 h-12 bg-emerald-400 rounded-full flex items-center justify-center text-sm font-black shadow-inner border-2 border-white/20">보건</div>
                             <div>
@@ -970,7 +1021,6 @@
                             </div>
                         </div>
 
-                        {/* Search */}
                         <div className="p-4 border-b border-slate-100">
                             <div className="relative">
                                 <SearchIcon className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -978,7 +1028,6 @@
                             </div>
                         </div>
 
-                        {/* Step Navigation Menu List */}
                         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 hide-scroll">
                             {APP_MENUS.map(menu => {
                                 const isActive = activeMenu === menu.id;
@@ -996,7 +1045,6 @@
                             })}
                         </nav>
                         
-                        {/* 앱 사이드바 하단 저작권 표기 */}
                         <div className="p-4 border-t border-slate-100 text-center">
                             <p className="text-[10px] text-slate-400 font-medium tracking-tight">
                                 © Copyright 2022582@kiha21.or.kr. All rights reserved.
@@ -1059,7 +1107,7 @@
                         {/* Tool Layout Container */}
                         <div id="tool-container" className="flex-1 flex overflow-hidden p-0 lg:p-6 lg:gap-6 relative bg-slate-50">
                             
-                            {/* 좌측 패널 (선택된 메뉴에 따른 입력 폼) - Card Style */}
+                            {/* --- 좌측 패널 (입력 폼) --- */}
                             <div id="input-panel" className={`w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 bg-white lg:rounded-2xl lg:shadow-sm lg:border border-slate-200 flex flex-col h-full print-hide ${mobileTab === 'edit' ? 'flex' : 'hidden lg:flex'}`}>
                                 
                                 <div className="p-5 border-b border-slate-100 flex-shrink-0 bg-slate-50/50 lg:rounded-t-2xl">
@@ -1082,17 +1130,43 @@
                                                         className="w-full pl-10 p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none font-bold text-slate-800 transition-all" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="block text-xs font-bold text-slate-600">대표자 성명</label>
-                                                <input type="text" placeholder="대표자 성명" 
-                                                    value={representativeName} onChange={e => setRepresentativeName(e.target.value)}
-                                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-3">
+                                                    <label className="block text-xs font-bold text-slate-600">대표자 성명</label>
+                                                    <input type="text" placeholder="대표자 성명" 
+                                                        value={representativeName} onChange={e => setRepresentativeName(e.target.value)}
+                                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="block text-xs font-bold text-slate-600">업종</label>
+                                                    <input type="text" placeholder="예: 제조업" 
+                                                        value={industryType} onChange={e => setIndustryType(e.target.value)}
+                                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                                </div>
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="block text-xs font-bold text-slate-600">소재지 (주소)</label>
                                                 <input type="text" placeholder="소재지(주소)" 
                                                     value={address} onChange={e => setAddress(e.target.value)}
                                                     className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                                                <div className="space-y-3">
+                                                    <label className="block text-xs font-bold text-slate-600">측정 시작일</label>
+                                                    <input type="date" value={measurementDate} onChange={e => setMeasurementDate(e.target.value)}
+                                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="block text-xs font-bold text-slate-600">측정 기간</label>
+                                                    <select value={measurementDuration} onChange={e => setMeasurementDuration(e.target.value)}
+                                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all">
+                                                        <option value="1">1일간</option>
+                                                        <option value="2">2일간</option>
+                                                        <option value="3">3일간</option>
+                                                        <option value="4">4일간</option>
+                                                        <option value="5">5일간</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                             <div className="flex items-center justify-between mt-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
                                                 <div className="flex flex-col">
@@ -1112,13 +1186,12 @@
 
                                     {activeMenu === 'layout' && (
                                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                                            {/* 도면 및 도구 */}
                                             {useLayout ? (
                                                 <div>
                                                     <h3 className="text-sm font-bold text-slate-600 mb-3 flex justify-between items-center">
                                                         도면 도구
                                                     </h3>
-                                                    <div className="grid grid-cols-4 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                                    <div className="grid grid-cols-5 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
                                                         <button onClick={() => setTool('select')} className={`flex flex-col items-center p-2.5 rounded-lg transition-colors ${tool === 'select' ? 'bg-white text-[#3b82f6] shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-200 font-medium'}`}>
                                                             <MousePointer2 className="w-5 h-5 mb-1" /> <span className="text-[10px]">선택/이동</span>
                                                         </button>
@@ -1127,6 +1200,9 @@
                                                         </button>
                                                         <button onClick={() => setTool('hood')} className={`flex flex-col items-center p-2.5 rounded-lg transition-colors ${tool === 'hood' ? 'bg-white text-[#3b82f6] shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-200 font-medium'}`}>
                                                             <Square className="w-5 h-5 mb-1" /> <span className="text-[10px]">후드</span>
+                                                        </button>
+                                                        <button onClick={() => setTool('hazard')} className={`flex flex-col items-center p-2.5 rounded-lg transition-colors ${tool === 'hazard' ? 'bg-white text-orange-500 shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-200 font-medium'}`}>
+                                                            <AlertTriangle className="w-5 h-5 mb-1" /> <span className="text-[10px]">유해물질</span>
                                                         </button>
                                                         <button onClick={() => setTool('line')} className={`flex flex-col items-center p-2.5 rounded-lg transition-colors ${tool === 'line' ? 'bg-white text-[#3b82f6] shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-200 font-medium'}`}>
                                                             <Minus className="w-5 h-5 mb-1" /> <span className="text-[10px]">덕트</span>
@@ -1161,12 +1237,24 @@
                                                             ))}
                                                         </div>
                                                     </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-slate-600 mb-3 flex justify-between items-center">
+                                                            유해물질 목록
+                                                            <button onClick={() => createHazard()} className="text-[10px] bg-orange-50 text-orange-600 px-2.5 py-1 rounded-full font-bold hover:bg-orange-100 transition-colors">+ 추가</button>
+                                                        </h3>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {nodes.filter(n => n.type === 'hazard').map(n => (
+                                                                <button key={n.id} onClick={() => setSelectedNodeId(n.id)} className={`p-2.5 text-xs font-bold rounded-xl border text-left truncate transition-all ${selectedNodeId === n.id ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white hover:border-orange-300'}`}>
+                                                                    <AlertTriangle className="w-3.5 h-3.5 inline mr-1.5"/>{n.data.hazardName || '유해물질'}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
 
                                             <hr className="border-slate-100" />
 
-                                            {/* 3. 선택 객체 제원 입력 */}
                                             <div className="pb-8">
                                                 <div className="flex justify-between items-center mb-3">
                                                     <h3 className="text-sm font-bold text-slate-600">제원 상세 입력</h3>
@@ -1232,6 +1320,21 @@
                                                                 </div>
                                                             );
                                                         })()}
+                                                    </div>
+                                                ) : selectedNode.type === 'hazard' ? (
+                                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                                        <div>
+                                                            <label className="block text-xs font-bold mb-1.5 text-slate-700">공정명</label>
+                                                            <input type="text" value={selectedNode.data.processName || ""} onChange={e => updateNodeData('processName', e.target.value)}
+                                                                   placeholder="예: 세척공정, 도장공정 등"
+                                                                   className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm font-bold outline-none focus:bg-white focus:ring-2 focus:ring-orange-500 transition-all" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold mb-1.5 text-slate-700">유해인자 명칭</label>
+                                                            <input type="text" value={selectedNode.data.hazardName || ""} onChange={e => updateNodeData('hazardName', e.target.value)}
+                                                                   placeholder="예: 톨루엔, 납 등"
+                                                                   className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm font-bold outline-none focus:bg-white focus:ring-2 focus:ring-orange-500 transition-all" />
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
@@ -1383,7 +1486,6 @@
 
                                     {activeMenu === 'eval' && (
                                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                                            {/* 육안 및 기류 평가 탭 */}
                                             <div>
                                                 <h3 className="text-sm font-bold text-slate-800 mb-3">육안평가</h3>
                                                 <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
@@ -1418,7 +1520,6 @@
                                                                                         미흡
                                                                                     </label>
                                                                                 </div>
-                                                                                {/* 미흡 선택 시 결함 대상 후드 다중 선택 UI */}
                                                                                 {evaluationData.visual[item.id] === '미흡' && (
                                                                                     <div className="mt-2.5 p-2.5 bg-red-50/50 border border-red-100 rounded-lg flex flex-col gap-1.5 animate-in fade-in">
                                                                                         <span className="text-[10px] font-black text-red-600 mb-0.5">▶ 결함이 발견된 설비 선택 (다중가능)</span>
@@ -1442,7 +1543,6 @@
                                                                             </td>
                                                                             <td className="p-2.5 text-left text-slate-600 w-[50%] break-keep font-medium">
                                                                                 {item.desc}
-                                                                                {/* 출력용 보고서에 결함 타겟 후드 명시 */}
                                                                                 {evaluationData.visual[item.id] === '미흡' && evaluationData.visualTargets?.[item.id]?.length > 0 && (
                                                                                     <div className="mt-1.5 text-[10px] text-red-500 font-bold">
                                                                                         * 해당 설비: {evaluationData.visualTargets[item.id].map(id => nodes.find(n => n.id === id)?.data.processName).filter(Boolean).join(', ')}
@@ -1482,7 +1582,6 @@
                                                                             </div> 미흡
                                                                         </label>
                                                                     </div>
-                                                                    {/* 기류평가 미흡 시 다중 선택 UI 추가 */}
                                                                     {evaluationData.airflow.status === '미흡' && (
                                                                         <div className="mt-2.5 p-2.5 bg-red-50/50 border border-red-100 rounded-lg flex flex-col gap-1.5 animate-in fade-in w-full text-left">
                                                                             <span className="text-[10px] font-black text-red-600 mb-0.5">▶ 결함이 발견된 설비 선택 (다중가능)</span>
@@ -1511,7 +1610,6 @@
                                                                             <tr>
                                                                                 <td className="p-2 h-10 font-black text-red-500 text-center flex flex-col justify-center items-center">
                                                                                     {evaluationData.airflow.badLocation || '\u00A0'}
-                                                                                    {/* 출력용 보고서에 기류 불량 타겟 후드 명시 */}
                                                                                     {evaluationData.airflow.status === '미흡' && evaluationData.airflowTargets?.length > 0 && (
                                                                                         <div className="mt-1 text-[10px] text-red-500 font-bold leading-tight px-2">
                                                                                             * 불량 대상: {evaluationData.airflowTargets.map(id => nodes.find(n => n.id === id)?.data.processName).filter(Boolean).join(', ')}
@@ -1583,7 +1681,7 @@
                                                                 </div>
                                                             )}
                                                             {diag.solutions.length > 0 && (
-                                                                <div className={`p-3 rounded-lg space-y-1.5 ${diag.status === 'success' ? 'bg-emerald-100/50' : diag.status === 'info' ? 'bg-white' : 'bg-white'}`}>
+                                                                <div className={`p-3 rounded-lg space-y-1.5 ${diag.status === 'success' ? 'bg-emerald-100/50' : 'bg-white'}`}>
                                                                     <p className="text-[10px] font-black text-slate-400 mb-1.5">AI 솔루션 제안</p>
                                                                     {diag.solutions.map((sol, i) => (
                                                                         <p key={i} className="text-xs text-slate-700 font-bold flex items-start gap-1.5 break-keep leading-relaxed"><span className="text-[#3b82f6] mt-0.5">▶</span> {sol}</p>
@@ -1669,12 +1767,12 @@
                                 </div>
                             </div>
 
-                            {/* 우측 패널 (보고서 영역 및 도면 뷰어) - Card Style */}
+                            {/* --- 우측 패널 (보고서 영역) --- */}
                             <div id="report-panel" className={`flex-1 bg-white lg:rounded-2xl lg:shadow-sm lg:border border-slate-200 overflow-y-auto relative p-4 lg:p-8 print-force-block ${mobileTab === 'report' ? 'block' : 'hidden lg:block'}`}>
                                 
                                 <div id="report-content-wrapper" className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-4 sm:p-[20mm] print-force-block text-slate-800 flex flex-col">
                                     
-                                    {/* --- 표지 (Cover Page) --- */}
+                                    {/* 표지 (Cover Page) */}
                                     <div className="cover-page page-break-after-always flex flex-col min-h-[260mm]">
                                         <div className="border-b-[4px] border-slate-800 pb-10 mb-12 text-center relative page-break-inside-avoid">
                                             <h1 className="text-3xl sm:text-[42px] font-black text-slate-900 tracking-tight leading-tight">국소배기장치<br/>성능평가 보고서</h1>
@@ -1699,14 +1797,21 @@
                                                         <td className="border border-slate-300 p-4 w-[30%] text-center font-black text-slate-900 text-lg bg-white">{representativeName || "미입력"}</td>
                                                     </tr>
                                                     <tr>
+                                                        <th className="bg-slate-100 border border-slate-300 p-4 text-center font-bold text-slate-700">업종</th>
+                                                        <td className="border border-slate-300 p-4 font-black text-slate-900 text-center text-lg bg-white">{industryType || "미입력"}</td>
                                                         <th className="bg-slate-100 border border-slate-300 p-4 text-center font-bold text-slate-700">소재지</th>
-                                                        <td colSpan="3" className="border border-slate-300 p-4 font-black text-slate-900 text-center text-lg bg-white">{address || "미입력"}</td>
+                                                        <td className="border border-slate-300 p-4 font-black text-slate-900 text-center text-lg bg-white">{address || "미입력"}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th className="bg-slate-100 border border-slate-300 p-4 text-center font-bold text-slate-700">측정일자</th>
+                                                        <td colSpan="3" className="border border-slate-300 p-4 font-black text-slate-900 text-center text-lg bg-white">
+                                                            {measurementDate ? `${measurementDate} (${measurementDuration}일간)` : "미입력"}
+                                                        </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
                                         </div>
 
-                                        {/* --- 결재란 우측 하단 고정 --- */}
                                         <div className="mt-auto flex justify-end page-break-inside-avoid w-full">
                                             <table className="border-collapse border-[2px] border-slate-800 text-[10px] w-[220px]">
                                                 <tbody>
@@ -1732,7 +1837,7 @@
                                         </div>
                                     </div>
                                     
-                                    {/* --- 본문 시작 --- */}
+                                    {/* 보고서 본문 시작 */}
 
                                     {/* 1. 공정 Lay-out */}
                                     {useLayout && (
@@ -1741,8 +1846,9 @@
                                                 {sIdx.layout}. 공정 Lay-out
                                             </h2>
                                             <div className={`w-full h-[350px] sm:h-[400px] print:h-[400px] bg-slate-50 border ${tool === 'select' ? 'border-slate-200' : 'border-[#3b82f6] border-dashed bg-blue-50/20'} rounded-xl relative overflow-hidden pdf-layout-container`}>
-                                                <svg ref={svgRef} className={`touch-none-svg w-full h-full ${tool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
-                                                    onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
+                                                <svg ref={svgRef} className={`touch-none w-full h-full ${tool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
+                                                    onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}
+                                                    style={{ touchAction: 'none' }}>
                                                     <defs>
                                                         <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
                                                             <circle cx="10" cy="10" r="1.5" fill="#e2e8f0" className="print:hidden"/>
@@ -1795,6 +1901,10 @@
                                                                     iconClass = "text-red-500"; textFill = "fill-red-900";
                                                                 }
                                                             }
+                                                        } else if (n.type === 'hazard') {
+                                                            rectFill = isSelected ? '#ffedd5' : '#fff7ed';
+                                                            rectStroke = isSelected ? '#ea580c' : '#f97316';
+                                                            iconClass = "text-orange-500"; textFill = "fill-orange-900";
                                                         }
 
                                                         return (
@@ -1804,6 +1914,12 @@
                                                                     <>
                                                                         <Fan x="4" y="4" width="16" height="16" className={iconClass} />
                                                                         <text x="12" y="-6" textAnchor="middle" className={`text-[10px] font-bold print:block drop-shadow-sm ${textFill}`}>{n.data.fanName}</text>
+                                                                    </>
+                                                                ) : n.type === 'hazard' ? (
+                                                                    <>
+                                                                        <AlertTriangle x="4" y="4" width="16" height="16" className={iconClass} />
+                                                                        <text x="12" y="-6" textAnchor="middle" className={`text-[10px] font-bold print:block drop-shadow-sm ${textFill}`}>{n.data.hazardName || '유해인자'}</text>
+                                                                        <text x="12" y="36" textAnchor="middle" className={`text-[9px] font-bold print:block ${textFill}`}>{n.data.processName || '공정명'}</text>
                                                                     </>
                                                                 ) : (
                                                                     <>
@@ -2010,7 +2126,7 @@
                                         </div>
                                     )}
 
-                                    {/* 4. 종합 평가 요약 (레이아웃 하단에 넓게 배치) */}
+                                    {/* 4. 종합 평가 요약 */}
                                     {(hoodsData.length > 0 || fansData.length > 0) && (
                                         <div className="mb-10 page-break-inside-avoid">
                                             <h2 className="text-base font-black border-l-[3px] border-[#3b82f6] pl-2.5 mb-4 text-slate-800">
