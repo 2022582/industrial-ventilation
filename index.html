@@ -43,7 +43,7 @@
             /* 최상위 래퍼(#app-container)를 포함하여 모든 요소의 높이 제약을 해제 */
             html, body, #root, #app-container, #app-content, #dashboard-main, .print-force-block { display: block !important; height: auto !important; min-height: auto !important; max-height: none !important; width: 100% !important; max-width: none !important; overflow: visible !important; position: static !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;}
             #tool-container { display: block !important; gap: 0 !important; padding: 0 !important; }
-            #input-panel { display: none !important; }
+            #input-panel, #mobile-nav-scroll { display: none !important; }
             #report-panel { width: 100% !important; flex: none !important; overflow: visible !important; background: white !important; padding: 0 !important; border: none !important; box-shadow: none !important;}
             #report-content-wrapper { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important;}
             table { page-break-inside: auto; width: 100% !important; }
@@ -74,6 +74,7 @@
         }
         .pdf-generating #dashboard-sidebar,
         .pdf-generating #input-panel,
+        .pdf-generating #mobile-nav-scroll,
         .pdf-generating header,
         .pdf-generating .print-hide {
             display: none !important;
@@ -123,7 +124,11 @@
         const SearchIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
         const HomeIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
         const StarIcon = ({className, fill}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
-        const ChevronRight = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
+        const InfoIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+        const LayoutIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>;
+        const ZapIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+        const EditIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+        const FileTextIcon = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
 
         // KOSHA 작업종류별 환기 표준 가이드 데이터
         const KOSHA_GUIDES = [
@@ -149,6 +154,16 @@
             { id: 'casting', title: '주물작업 (용해/주입)', desc: '용해로 상부에 열 상승 기류를 포집하는 수전형(캐노피) 또는 측방 후드 설치. 제어풍속 1.0 ~ 1.2 m/s 이상 (유해 흄 발생 시 상향 조정).' },
             { id: 'fumehood', title: '실험실 흄후드', desc: '제어풍속 0.4 ~ 0.5 m/s (샤시 개방면적 기준). 샤시 높이 조절에 따른 챔버 내 난기류 및 풍속 변화 방지를 위해 VAV 시스템 또는 바이패스 설계.' },
             { id: 'welding', title: '용접작업', desc: '플렉시블(국소배기) 암 후드를 용접 발생점으로부터 30cm 이내에 위치시켜 흄 포집 극대화. 부스식/포위식 적용 시 제어풍속 0.5 ~ 1.0 m/s 이상.' }
+        ];
+
+        // 새로운 메뉴 구조
+        const APP_MENUS = [
+            { id: 'info', label: '사업장 현황', icon: <InfoIcon className="w-5 h-5"/> },
+            { id: 'layout', label: 'Lay-out', icon: <LayoutIcon className="w-5 h-5"/> },
+            { id: 'eval', label: '육안 및 기류', icon: <CheckCircle2 className="w-5 h-5"/> },
+            { id: 'smart', label: '스마트 국소배기진단', icon: <ZapIcon className="w-5 h-5"/> },
+            { id: 'review', label: '점검자 총평', icon: <EditIcon className="w-5 h-5"/> },
+            { id: 'guide', label: '가이드라인 첨부', icon: <FileTextIcon className="w-5 h-5"/> },
         ];
 
         function App() {
@@ -183,9 +198,12 @@
             const [draggingEdgeId, setDraggingEdgeId] = useState(null);
             const [drawingEdge, setDrawingEdge] = useState(null);
             
-            // 모바일 & 탭 상태
+            // AI 스마트 진단 상태
+            const [smartDiagnostics, setSmartDiagnostics] = useState([]);
+
+            // 네비게이션 및 모바일 상태
             const [mobileTab, setMobileTab] = useState('edit');
-            const [leftTab, setLeftTab] = useState('input');
+            const [activeMenu, setActiveMenu] = useState('info'); // 좌측 메인 탭 상태
             const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
             
             // 육안 및 기류 평가
@@ -204,18 +222,12 @@
             const svgRef = useRef(null);
             const fileInputRef = useRef(null);
 
-            // [추가] 브라우저 기본 인쇄(Ctrl+P 등) 감지 및 스크롤 제약 해제 대응
+            // 브라우저 기본 인쇄 감지
             useEffect(() => {
-                const beforePrint = () => {
-                    document.documentElement.classList.add('pdf-generating');
-                };
-                const afterPrint = () => {
-                    document.documentElement.classList.remove('pdf-generating');
-                };
-
+                const beforePrint = () => document.documentElement.classList.add('pdf-generating');
+                const afterPrint = () => document.documentElement.classList.remove('pdf-generating');
                 window.addEventListener('beforeprint', beforePrint);
                 window.addEventListener('afterprint', afterPrint);
-
                 return () => {
                     window.removeEventListener('beforeprint', beforePrint);
                     window.removeEventListener('afterprint', afterPrint);
@@ -227,7 +239,7 @@
             };
 
             const handleSaveFile = () => {
-                const data = { factoryName, representativeName, address, useLayout, overallReview, overallReviewImage, selectedGuides, guidePhotos, nodes, edges, evaluationData };
+                const data = { factoryName, representativeName, address, useLayout, overallReview, overallReviewImage, selectedGuides, guidePhotos, nodes, edges, evaluationData, smartDiagnostics };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -257,6 +269,7 @@
                             setNodes(data.nodes || []);
                             setEdges(data.edges || []);
                             if (data.evaluationData) setEvaluationData(data.evaluationData);
+                            if (data.smartDiagnostics) setSmartDiagnostics(data.smartDiagnostics);
                             showAlert("데이터를 성공적으로 불러왔습니다.");
                         } else {
                             showAlert("유효하지 않은 데이터 양식입니다.");
@@ -272,8 +285,6 @@
             const handleSharePDF = async () => {
                 setMobileTab('report'); 
                 setIsGeneratingPDF(true);
-                
-                // PDF 생성을 위해 임시로 DOM 구조의 높이(스크롤) 제한을 모두 풉니다.
                 document.documentElement.classList.add('pdf-generating');
                 
                 setTimeout(async () => {
@@ -285,15 +296,10 @@
                         return;
                     }
                     const opt = {
-                        margin:       [15, 10, 15, 10], // 상, 우, 하, 좌 여백 최적화
+                        margin:       [15, 10, 15, 10], 
                         filename:     `국소배기보고서_${factoryName || '사업장'}.pdf`,
                         image:        { type: 'jpeg', quality: 1 },
-                        html2canvas:  { 
-                            scale: 2, 
-                            useCORS: true, 
-                            scrollY: 0, // 강제로 최상단 기준 캡처 설정
-                            windowWidth: 1024 
-                        },
+                        html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1024 },
                         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak:    { mode: ['css', 'legacy'] }
                     };
@@ -316,17 +322,16 @@
                         showAlert("PDF 생성 중 오류가 발생했습니다.");
                     } finally {
                         setIsGeneratingPDF(false);
-                        document.documentElement.classList.remove('pdf-generating'); // 캡처 완료 후 뷰 복구
+                        document.documentElement.classList.remove('pdf-generating');
                     }
-                }, 500); // 돔 스타일이 풀리고 화면이 펼쳐지길 기다리는 시간 (500ms로 증가)
+                }, 500); 
             };
 
             const handlePrint = () => {
                 setMobileTab('report');
-                document.documentElement.classList.add('pdf-generating'); // 출력 버튼 클릭 시에도 제약 해제
+                document.documentElement.classList.add('pdf-generating');
                 setTimeout(() => {
                     window.print();
-                    // 인쇄 창이 닫히면 afterprint 이벤트로 인해 클래스가 제거됩니다.
                 }, 500);
             };
 
@@ -619,6 +624,95 @@
                 });
             }, [nodes, hoodsData]);
 
+            // --- AI 스마트 진단 로직 ---
+            const runSmartDiagnostics = () => {
+                let diagnostics = [];
+                
+                if (hoodsData.length === 0 && fansData.length === 0) {
+                    setSmartDiagnostics([{
+                        type: 'system', name: '데이터 부족', status: 'info',
+                        issues: ['입력된 후드 및 송풍기 데이터가 없습니다.'],
+                        solutions: ['Lay-out 메뉴 또는 목록에서 후드와 송풍기를 추가하고 제원을 상세히 입력해 주세요.'],
+                        references: []
+                    }]);
+                    return;
+                }
+
+                hoodsData.forEach(hood => {
+                    const { data, calc } = hood;
+                    if (!calc.isGood) {
+                        let issues = [];
+                        let solutions = [];
+                        let refs = new Set();
+
+                        if (!calc.isVelocityGood) {
+                            issues.push(`측정 제어풍속(${data.measuredControlVelocity || 0} m/s)이 법정 기준(${data.controlVelocity} m/s)에 미달합니다.`);
+                            if (data.hoodType !== 'enclosure') {
+                                solutions.push(`외부식 후드는 제어거리(X=${data.distanceX}m)의 제곱에 비례해 필요 배기량이 급증합니다(Q=V(10X²+A)). 제어거리를 최소화하거나 후드 형태를 '포위식'으로 변경 시 배기량을 대폭 절감할 수 있습니다.`);
+                                refs.add('ACGIH 산업환기 매뉴얼');
+                            } else {
+                                solutions.push(`포위식 후드이므로 개구면적(${calc.openingArea}㎡)을 최소화(가림막, 플렉시블 커튼 설치)하여 유입 속도를 높이는 방안을 검토하십시오.`);
+                                refs.add('KOSHA GUIDE W-1-2019 (산업환기설비 기술지침)');
+                            }
+                            refs.add('산업안전보건기준에 관한 규칙 (별표 16)');
+                        }
+
+                        if (!calc.isVolumeGood) {
+                            issues.push(`현재 배기량(${calc.currentQ} CMM)이 필요 배기량(${calc.requiredQ} CMM)보다 부족합니다.`);
+                            if (data.manualFanName) {
+                                solutions.push(`덕트 내 마찰 손실 과다(분진 퇴적, 댐퍼 닫힘) 또는 곡관부 압력 손실을 점검하세요. 필요시 송풍기(${data.manualFanName}) 용량 증대가 필요합니다.`);
+                            } else {
+                                solutions.push(`송풍기 매핑이 누락되었습니다. 배기 시스템의 전체 밸런스(합류관 압력조정) 점검이 필요합니다.`);
+                            }
+                            refs.add('KOSHA GUIDE W-1-2019 (산업환기설비 기술지침)');
+                        }
+
+                        if (data.hoodType === 'ext_up' && data.materialState === 'particle') {
+                            issues.push(`분진(입자상) 발생 공정에 외부 상방형(캐노피) 후드가 설치되어 있습니다.`);
+                            solutions.push(`입자상 물질은 비산 방향으로 흡인하는 것이 원칙입니다. KOSHA Guide에 따라 측방형 또는 하방형 후드로의 구조 변경을 강력히 권고합니다.`);
+                            refs.add('KOSHA GUIDE W-1-2019 (산업환기설비 기술지침)');
+                        }
+
+                        if(issues.length > 0){
+                            diagnostics.push({ type: 'hood', id: hood.id, name: data.processName, status: 'danger', issues, solutions, references: Array.from(refs) });
+                        }
+                    } else {
+                        diagnostics.push({
+                            type: 'hood', id: hood.id, name: data.processName, status: 'success', issues: [],
+                            solutions: ["제어풍속 및 배기량이 법적/기술적 기준을 완벽하게 만족합니다. 주기적인 덕트 마찰 손실 및 댐퍼 점검만 유지하십시오."],
+                            references: ['산업안전보건기준에 관한 규칙 (별표 16)', 'KOSHA GUIDE W-1-2019']
+                        });
+                    }
+                });
+
+                fansData.forEach(fan => {
+                    const { data, calc } = fan;
+                    if (calc.status !== '양호' && calc.status !== '-') {
+                        let issues = [];
+                        let solutions = [];
+                        let refs = new Set();
+
+                        issues.push(`송풍기 효율이 ${calc.status}(${calc.eff.toFixed(1)}%) 상태입니다.`);
+                        
+                        if (calc.suctionRatio > 100) {
+                            issues.push(`연결된 후드들의 배기량 합계(${calc.sumCurrentQ.toFixed(1)} CMM)가 송풍기 정격 풍량(${data.ratedQ} CMM)을 초과합니다.`);
+                            solutions.push(`송풍기의 과부하 상태입니다. 정격 용량이 더 큰 송풍기로 교체하거나, 공정 가동 스케줄을 분리하여 동시 사용률(Diversity factor)을 낮추십시오.`);
+                            refs.add('ACGIH 산업환기 매뉴얼 (시스템 밸런싱)');
+                        } else {
+                            solutions.push(`풍량 저하의 주원인인 V-벨트 슬립(헐거움), 임펠러 마모 또는 부식, 배기구 측 압력 상승(방충망 막힘 등)을 점검하십시오.`);
+                            refs.add('KOSHA GUIDE W-1-2019 (산업환기설비 기술지침)');
+                        }
+
+                        diagnostics.push({
+                            type: 'fan', id: fan.id, name: data.fanName, status: calc.status === '불량' ? 'danger' : 'warning', issues, solutions, references: Array.from(refs)
+                        });
+                    }
+                });
+
+                setSmartDiagnostics(diagnostics);
+                showAlert("스마트 진단이 완료되었습니다.");
+            };
+
             const selectedNode = nodes.find(n => n.id === selectedNodeId);
             const selectedNodeCalc = selectedNode?.type === 'hood' ? calculateResult(selectedNode.data) : null;
             
@@ -654,13 +748,13 @@
 
                     <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileUpload} />
 
-                    {/* Left Sidebar (Desktop Only) - Benchmarked Layout */}
+                    {/* Left Sidebar (Desktop Only) - Navigation */}
                     <aside id="dashboard-sidebar" className="hidden lg:flex flex-col w-64 xl:w-72 bg-white border-r border-slate-200 z-20 flex-shrink-0 h-full shadow-sm print-hide">
                         {/* Profile Block */}
                         <div className="bg-[#3b82f6] text-white p-5 flex items-center gap-3">
                             <div className="w-12 h-12 bg-emerald-400 rounded-full flex items-center justify-center text-sm font-black shadow-inner border-2 border-white/20">보건</div>
                             <div>
-                                <div className="font-bold text-base tracking-tight">산업환기</div>
+                                <div className="font-bold text-base tracking-tight">보건</div>
                             </div>
                         </div>
 
@@ -672,19 +766,22 @@
                             </div>
                         </div>
 
-                        {/* Menu List */}
-                        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-                            <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">
-                                <HomeIcon className="w-5 h-5" /> 홈
-                            </a>
-                            {/* Active Menu */}
-                            <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-[#3b82f6] bg-blue-50 rounded-lg transition-colors relative">
-                                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-[#3b82f6] rounded-r-md"></div>
-                                <StarIcon className="w-5 h-5 text-[#3b82f6]" fill="currentColor" /> 국소배기 성능평가
-                            </a>
-                            <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">
-                                <StarIcon className="w-5 h-5" /> 단일후드 설계
-                            </a>
+                        {/* Step Navigation Menu List */}
+                        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 hide-scroll">
+                            {APP_MENUS.map(menu => {
+                                const isActive = activeMenu === menu.id;
+                                return (
+                                    <button 
+                                        key={menu.id}
+                                        onClick={() => setActiveMenu(menu.id)}
+                                        className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-bold rounded-lg transition-colors relative ${isActive ? 'text-[#3b82f6] bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
+                                    >
+                                        {isActive && <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-[#3b82f6] rounded-r-md"></div>}
+                                        {menu.icon}
+                                        <span className="flex-1 text-left">{menu.label}</span>
+                                    </button>
+                                );
+                            })}
                         </nav>
                     </aside>
 
@@ -703,10 +800,10 @@
                     <main id="dashboard-main" className="flex-1 flex flex-col h-full overflow-hidden relative pt-[60px] lg:pt-0">
                         
                         {/* Top Action Bar (Desktop) */}
-                        <div className="hidden lg:flex justify-between items-end px-8 pt-8 pb-4 flex-shrink-0 print-hide z-10">
+                        <div className="hidden lg:flex justify-between items-end px-8 pt-8 pb-4 flex-shrink-0 print-hide z-10 border-b border-slate-200/50">
                             <div>
-                                <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-                                    산업환기님, 국소배기장치 성능평가를 진행하세요.
+                                <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                                    국소배기장치 자체검사 및 성능평가
                                 </h1>
                             </div>
                             <div className="flex gap-2">
@@ -725,62 +822,83 @@
                             </div>
                         </div>
 
+                        {/* Mobile Nav Tabs (Under Header) */}
+                        {mobileTab === 'edit' && (
+                            <div id="mobile-nav-scroll" className="lg:hidden flex overflow-x-auto bg-white border-b border-slate-200 hide-scroll flex-shrink-0">
+                                {APP_MENUS.map(menu => (
+                                    <button 
+                                        key={menu.id}
+                                        onClick={() => setActiveMenu(menu.id)}
+                                        className={`px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${activeMenu === menu.id ? 'border-[#3b82f6] text-[#3b82f6]' : 'border-transparent text-slate-500'}`}
+                                    >
+                                        {menu.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Tool Layout Container */}
-                        <div id="tool-container" className="flex-1 flex overflow-hidden p-0 lg:px-8 lg:pb-8 lg:gap-6 relative">
+                        <div id="tool-container" className="flex-1 flex overflow-hidden p-0 lg:p-6 lg:gap-6 relative bg-slate-50">
                             
-                            {/* 좌측 패널 (입력 및 평가 컨트롤) - Card Style */}
-                            <div id="input-panel" className={`w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-white lg:rounded-2xl lg:shadow-sm lg:border border-slate-200 flex flex-col h-full print-hide ${mobileTab === 'edit' ? 'flex' : 'hidden lg:flex'}`}>
+                            {/* 좌측 패널 (선택된 메뉴에 따른 입력 폼) - Card Style */}
+                            <div id="input-panel" className={`w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 bg-white lg:rounded-2xl lg:shadow-sm lg:border border-slate-200 flex flex-col h-full print-hide ${mobileTab === 'edit' ? 'flex' : 'hidden lg:flex'}`}>
                                 
-                                <div className="flex bg-slate-100 p-1.5 mx-4 mt-4 rounded-xl font-bold text-sm flex-shrink-0">
-                                    <button onClick={() => setLeftTab('input')} className={`flex-1 py-2 rounded-lg transition-colors ${leftTab === 'input' ? 'bg-white shadow text-[#3b82f6]' : 'text-slate-500 hover:text-slate-700'}`}>제원 및 도면</button>
-                                    <button onClick={() => setLeftTab('eval')} className={`flex-1 py-2 rounded-lg transition-colors ${leftTab === 'eval' ? 'bg-white shadow text-[#3b82f6]' : 'text-slate-500 hover:text-slate-700'}`}>육안 및 기류</button>
+                                <div className="p-5 border-b border-slate-100 flex-shrink-0 bg-slate-50/50 lg:rounded-t-2xl">
+                                    <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                        {APP_MENUS.find(m => m.id === activeMenu)?.icon}
+                                        {APP_MENUS.find(m => m.id === activeMenu)?.label}
+                                    </h2>
                                 </div>
 
                                 <div className="p-5 space-y-6 flex-1 overflow-y-auto hide-scroll">
-                                    {leftTab === 'input' ? (
-                                        <>
-                                            {/* 1. 기본 정보 설정 */}
-                                            <div>
-                                                <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2">1. 기본 정보 설정</h2>
-                                                <div className="space-y-3">
-                                                    <div className="relative">
-                                                        <Factory className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                                                        <input type="text" placeholder="사업장 명칭을 입력하세요" 
-                                                            value={factoryName} onChange={e => setFactoryName(e.target.value)}
-                                                            className="w-full pl-10 p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none font-bold text-slate-800 transition-all" />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <input type="text" placeholder="대표자 성명" 
-                                                            value={representativeName} onChange={e => setRepresentativeName(e.target.value)}
-                                                            className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
-                                                        <input type="text" placeholder="소재지(주소)" 
-                                                            value={address} onChange={e => setAddress(e.target.value)}
-                                                            className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-slate-800">도면(Lay-out) 사용</span>
-                                                        <span className="text-[10px] text-slate-500">목록 관리 모드로 전환</span>
-                                                    </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input type="checkbox" className="sr-only peer" checked={useLayout} onChange={e => {
-                                                            setUseLayout(e.target.checked);
-                                                            if (!e.target.checked) setTool('select');
-                                                        }} />
-                                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3b82f6]"></div>
-                                                    </label>
+                                    
+                                    {activeMenu === 'info' && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                                            <div className="space-y-3">
+                                                <label className="block text-xs font-bold text-slate-600">사업장 명칭</label>
+                                                <div className="relative">
+                                                    <Factory className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                                                    <input type="text" placeholder="사업장 명칭을 입력하세요" 
+                                                        value={factoryName} onChange={e => setFactoryName(e.target.value)}
+                                                        className="w-full pl-10 p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none font-bold text-slate-800 transition-all" />
                                                 </div>
                                             </div>
+                                            <div className="space-y-3">
+                                                <label className="block text-xs font-bold text-slate-600">대표자 성명</label>
+                                                <input type="text" placeholder="대표자 성명" 
+                                                    value={representativeName} onChange={e => setRepresentativeName(e.target.value)}
+                                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="block text-xs font-bold text-slate-600">소재지 (주소)</label>
+                                                <input type="text" placeholder="소재지(주소)" 
+                                                    value={address} onChange={e => setAddress(e.target.value)}
+                                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm font-bold text-slate-800 transition-all" />
+                                            </div>
+                                            <div className="flex items-center justify-between mt-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-800">도면(Lay-out) 사용</span>
+                                                    <span className="text-[10px] text-slate-500">끄면 도면 없이 목록 관리 모드로 전환됩니다.</span>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" className="sr-only peer" checked={useLayout} onChange={e => {
+                                                        setUseLayout(e.target.checked);
+                                                        if (!e.target.checked) setTool('select');
+                                                    }} />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3b82f6]"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
 
-                                            <hr className="border-slate-100" />
-
-                                            {/* 2. 도면 및 도구 */}
+                                    {activeMenu === 'layout' && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                                            {/* 도면 및 도구 */}
                                             {useLayout ? (
                                                 <div>
-                                                    <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2 flex justify-between items-center">
-                                                        2. Lay-out 도구
-                                                    </h2>
+                                                    <h3 className="text-sm font-bold text-slate-600 mb-3 flex justify-between items-center">
+                                                        도면 도구
+                                                    </h3>
                                                     <div className="grid grid-cols-4 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
                                                         <button onClick={() => setTool('select')} className={`flex flex-col items-center p-2.5 rounded-lg transition-colors ${tool === 'select' ? 'bg-white text-[#3b82f6] shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-200 font-medium'}`}>
                                                             <MousePointer2 className="w-5 h-5 mb-1" /> <span className="text-[10px]">선택/이동</span>
@@ -799,10 +917,10 @@
                                             ) : (
                                                 <div className="space-y-5">
                                                     <div>
-                                                        <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-indigo-500 pl-2 flex justify-between items-center">
-                                                            2-1. 송풍기 목록
+                                                        <h3 className="text-sm font-bold text-slate-600 mb-3 flex justify-between items-center">
+                                                            송풍기 목록
                                                             <button onClick={() => createFan()} className="text-[10px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-bold hover:bg-indigo-100 transition-colors">+ 추가</button>
-                                                        </h2>
+                                                        </h3>
                                                         <div className="grid grid-cols-2 gap-2">
                                                             {nodes.filter(n => n.type === 'fan').map(n => (
                                                                 <button key={n.id} onClick={() => setSelectedNodeId(n.id)} className={`p-2.5 text-xs font-bold rounded-xl border text-left truncate transition-all ${selectedNodeId === n.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white hover:border-indigo-300'}`}>
@@ -812,10 +930,10 @@
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2 flex justify-between items-center">
-                                                            2-2. 후드 목록
+                                                        <h3 className="text-sm font-bold text-slate-600 mb-3 flex justify-between items-center">
+                                                            후드 목록
                                                             <button onClick={() => createHood()} className="text-[10px] bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-bold hover:bg-blue-100 transition-colors">+ 추가</button>
-                                                        </h2>
+                                                        </h3>
                                                         <div className="grid grid-cols-2 gap-2">
                                                             {nodes.filter(n => n.type === 'hood').map(n => (
                                                                 <button key={n.id} onClick={() => setSelectedNodeId(n.id)} className={`p-2.5 text-xs font-bold rounded-xl border text-left truncate transition-all ${selectedNodeId === n.id ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-md' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white hover:border-blue-300'}`}>
@@ -832,7 +950,7 @@
                                             {/* 3. 선택 객체 제원 입력 */}
                                             <div className="pb-8">
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <h2 className="text-sm font-bold text-slate-800 border-l-4 border-[#3b82f6] pl-2">3. 제원 입력</h2>
+                                                    <h3 className="text-sm font-bold text-slate-600">제원 상세 입력</h3>
                                                     {(selectedNodeId || selectedEdgeId) && (
                                                         <button onClick={deleteSelected} className="text-red-500 hover:bg-red-50 flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors">
                                                             <Trash2 className="w-3.5 h-3.5" /> 삭제
@@ -1001,7 +1119,7 @@
                                                         </div>
 
                                                         <div className="pt-4 border-t border-slate-100">
-                                                            <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-slate-400 pl-2">4. 현재 배기량 산정 (덕트)</h2>
+                                                            <h3 className="text-sm font-bold text-slate-800 mb-3">현재 배기량 산정 (덕트)</h3>
                                                             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
                                                                 <div className="flex gap-4 p-1 bg-white rounded-lg border border-slate-100 w-fit">
                                                                     <label className={`text-xs font-bold flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-md transition-colors ${selectedNode.data.shape === 'rect' ? 'bg-[#3b82f6] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -1041,64 +1159,14 @@
                                                     </div>
                                                 )}
                                             </div>
+                                        </div>
+                                    )}
 
-                                            <hr className="border-slate-100" />
-
-                                            {/* 4. 점검자 종합 의견 */}
-                                            <div className="pb-4">
-                                                <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2">4. 점검자 총평</h2>
-                                                <textarea
-                                                    value={overallReview}
-                                                    onChange={e => setOverallReview(e.target.value)}
-                                                    placeholder="성능 상태 및 개선 권고 사항 입력"
-                                                    className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-[#3b82f6] min-h-[100px] resize-y transition-all"
-                                                ></textarea>
-                                                <div className="mt-3">
-                                                    <label className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-xl p-3 flex justify-center items-center gap-2 cursor-pointer transition-colors text-sm font-bold text-slate-500">
-                                                        <Camera className="w-4 h-4" /> 스케치 자료 첨부
-                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReviewPhotoUpload} />
-                                                    </label>
-                                                    {overallReviewImage && (
-                                                        <div className="mt-3 relative rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                                                            <img src={overallReviewImage} alt="첨부 자료" className="w-full object-contain max-h-48 bg-white" />
-                                                            <button onClick={() => setOverallReviewImage(null)} className="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1.5 backdrop-blur-sm transition-colors"><XCircle className="w-4 h-4" /></button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* 5. KOSHA 환기 표준 가이드 */}
-                                            <div className="pb-6 pt-4">
-                                                <h2 className="text-sm font-bold text-slate-800 mb-2 border-l-4 border-emerald-500 pl-2">5. 가이드라인 첨부</h2>
-                                                <p className="text-[10px] text-slate-500 mb-3 font-medium">보고서에 첨부할 작업 종류를 다중 선택하세요.</p>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    {KOSHA_GUIDES.map(guide => {
-                                                        const isSelected = selectedGuides.includes(guide.id);
-                                                        return (
-                                                            <button 
-                                                                key={guide.id}
-                                                                onClick={() => {
-                                                                    if (isSelected) setSelectedGuides(selectedGuides.filter(id => id !== guide.id));
-                                                                    else setSelectedGuides([...selectedGuides, guide.id]);
-                                                                }}
-                                                                className={`p-2.5 text-[11px] font-bold text-left rounded-lg border transition-all ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'}`}
-                                                            >
-                                                                <div className="flex items-center gap-1.5">
-                                                                    {isSelected ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" /> : <Square className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
-                                                                    <span className="truncate">{guide.title}</span>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                        </>
-                                    ) : (
-                                        <>
+                                    {activeMenu === 'eval' && (
+                                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
                                             {/* 육안 및 기류 평가 탭 */}
                                             <div>
-                                                <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2">Step 2 육안평가</h2>
+                                                <h3 className="text-sm font-bold text-slate-800 mb-3">육안평가</h3>
                                                 <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
                                                     <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
                                                         <tbody>
@@ -1141,8 +1209,8 @@
                                                 </div>
                                             </div>
 
-                                            <div className="pt-6 pb-8">
-                                                <h2 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2">Step 3 기류평가</h2>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 mb-3">기류평가</h3>
                                                 <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
                                                     <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
                                                         <tbody>
@@ -1201,8 +1269,123 @@
                                                     </table>
                                                 </div>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
+
+                                    {activeMenu === 'smart' && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                                            <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                                <div>
+                                                    <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                                        <ZapIcon className="w-4 h-4 text-[#3b82f6]" /> AI 기반 스마트 진단
+                                                    </h3>
+                                                    <p className="text-[11px] text-slate-500 mt-1">입력된 제원 및 측정값을 바탕으로 최적화 방안을 추천합니다.</p>
+                                                </div>
+                                                <button onClick={runSmartDiagnostics} className="px-4 py-2 bg-[#3b82f6] hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap">
+                                                    진단 실행
+                                                </button>
+                                            </div>
+
+                                            {smartDiagnostics && smartDiagnostics.length > 0 ? (
+                                                <div className="space-y-4 pb-8">
+                                                    {smartDiagnostics.map((diag, idx) => (
+                                                        <div key={idx} className={`p-4 rounded-xl border ${diag.status === 'success' ? 'bg-emerald-50/50 border-emerald-200' : diag.status === 'danger' ? 'bg-red-50/50 border-red-200' : diag.status === 'info' ? 'bg-slate-50 border-slate-200' : 'bg-orange-50/50 border-orange-200'}`}>
+                                                            <h4 className={`text-sm font-black mb-2 flex items-center gap-2 ${diag.status === 'success' ? 'text-emerald-700' : diag.status === 'danger' ? 'text-red-700' : diag.status === 'info' ? 'text-slate-700' : 'text-orange-700'}`}>
+                                                                {diag.status === 'success' ? <CheckCircle2 className="w-4 h-4" /> : diag.status === 'info' ? <InfoIcon className="w-4 h-4" /> : <ZapIcon className="w-4 h-4" />}
+                                                                [{diag.type === 'hood' ? '후드' : diag.type === 'fan' ? '송풍기' : '시스템'}] {diag.name}
+                                                            </h4>
+                                                            
+                                                            {diag.issues.length > 0 && (
+                                                                <div className="mb-3 space-y-1.5">
+                                                                    {diag.issues.map((issue, i) => (
+                                                                        <p key={i} className="text-xs text-slate-600 font-bold flex items-start gap-1.5 break-keep"><span className="text-red-400 mt-0.5">•</span> {issue}</p>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {diag.solutions.length > 0 && (
+                                                                <div className={`p-3 rounded-lg space-y-1.5 ${diag.status === 'success' ? 'bg-emerald-100/50' : diag.status === 'info' ? 'bg-white' : 'bg-white'}`}>
+                                                                    <p className="text-[10px] font-black text-slate-400 mb-1.5">AI 솔루션 제안</p>
+                                                                    {diag.solutions.map((sol, i) => (
+                                                                        <p key={i} className="text-xs text-slate-700 font-bold flex items-start gap-1.5 break-keep leading-relaxed"><span className="text-[#3b82f6] mt-0.5">▶</span> {sol}</p>
+                                                                    ))}
+                                                                    {diag.references && diag.references.length > 0 && (
+                                                                        <div className="mt-2 pt-2 border-t border-slate-100/50 flex flex-wrap gap-1.5">
+                                                                            {diag.references.map((ref, i) => (
+                                                                                <span key={i} className="bg-slate-100/80 text-slate-500 text-[9px] px-1.5 py-0.5 rounded-md font-bold border border-slate-200">📘 {ref}</span>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                 <div className="flex flex-col items-center justify-center py-10 text-center">
+                                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                                        <Activity className="w-8 h-8 text-slate-300" />
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-400">상단의 '진단 실행' 버튼을 눌러<br/>데이터 분석을 시작하세요.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeMenu === 'review' && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 mb-3 border-l-4 border-[#3b82f6] pl-2">점검자 총평</h3>
+                                                <textarea
+                                                    value={overallReview}
+                                                    onChange={e => setOverallReview(e.target.value)}
+                                                    placeholder="성능 상태 및 개선 권고 사항 입력"
+                                                    className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-[#3b82f6] min-h-[150px] resize-y transition-all"
+                                                ></textarea>
+                                                <div className="mt-4">
+                                                    <label className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-xl p-4 flex justify-center items-center gap-2 cursor-pointer transition-colors text-sm font-bold text-slate-500">
+                                                        <Camera className="w-5 h-5" /> 스케치 자료 첨부
+                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReviewPhotoUpload} />
+                                                    </label>
+                                                    {overallReviewImage && (
+                                                        <div className="mt-4 relative rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                                            <img src={overallReviewImage} alt="첨부 자료" className="w-full object-contain max-h-48 bg-white" />
+                                                            <button onClick={() => setOverallReviewImage(null)} className="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1.5 backdrop-blur-sm transition-colors"><XCircle className="w-4 h-4" /></button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {activeMenu === 'guide' && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 mb-2 border-l-4 border-[#3b82f6] pl-2">가이드라인 첨부</h3>
+                                                <p className="text-[11px] text-slate-500 mb-4 font-medium">보고서에 첨부할 작업 종류를 다중 선택하세요.</p>
+                                                <div className="grid grid-cols-1 gap-2.5">
+                                                    {KOSHA_GUIDES.map(guide => {
+                                                        const isSelected = selectedGuides.includes(guide.id);
+                                                        return (
+                                                            <button 
+                                                                key={guide.id}
+                                                                onClick={() => {
+                                                                    if (isSelected) setSelectedGuides(selectedGuides.filter(id => id !== guide.id));
+                                                                    else setSelectedGuides([...selectedGuides, guide.id]);
+                                                                }}
+                                                                className={`p-3 text-[12px] font-bold text-left rounded-xl border transition-all ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'}`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    {isSelected ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <Square className="w-4 h-4 text-slate-300 flex-shrink-0" />}
+                                                                    <span className="truncate">{guide.title}</span>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                 </div>
                             </div>
 
@@ -1235,7 +1418,33 @@
                                                 </tbody>
                                             </table>
                                         </div>
+
+                                        {/* --- 결재란 (서명란) 추가 --- */}
+                                        <div className="mt-16 flex justify-end page-break-inside-avoid w-full max-w-3xl mx-auto">
+                                            <table className="border-collapse border border-slate-300 text-sm sm:text-base">
+                                                <tbody>
+                                                    <tr>
+                                                        <th rowSpan="2" className="bg-slate-100 border border-slate-300 p-2 w-10 text-center font-bold text-slate-700 align-middle">결<br/>재</th>
+                                                        <th className="bg-slate-100 border border-slate-300 p-2 w-24 sm:w-28 text-center font-bold text-slate-700">평가자</th>
+                                                        <th className="bg-slate-100 border border-slate-300 p-2 w-24 sm:w-28 text-center font-bold text-slate-700">보건관리자</th>
+                                                        <th className="bg-slate-100 border border-slate-300 p-2 w-24 sm:w-28 text-center font-bold text-slate-700">근로자 대표</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="border border-slate-300 h-20 sm:h-24 text-center bg-white relative">
+                                                            <span className="absolute bottom-2 right-2 text-xs font-bold text-slate-400">(인)</span>
+                                                        </td>
+                                                        <td className="border border-slate-300 h-20 sm:h-24 text-center bg-white relative">
+                                                            <span className="absolute bottom-2 right-2 text-xs font-bold text-slate-400">(인)</span>
+                                                        </td>
+                                                        <td className="border border-slate-300 h-20 sm:h-24 text-center bg-white relative">
+                                                            <span className="absolute bottom-2 right-2 text-xs font-bold text-slate-400">(인)</span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
+                                    
                                     {/* --- 본문 시작 --- */}
 
                                     {useLayout && (
@@ -1702,6 +1911,54 @@
                                         </div>
                                     </div>
 
+                                    {/* --- AI 스마트 진단 리포트 (출력용) --- */}
+                                    {smartDiagnostics && smartDiagnostics.length > 0 && (
+                                        <div className="pt-6 mt-8 page-break-inside-avoid">
+                                            <h2 className="text-base font-black border-l-[3px] border-[#3b82f6] pl-2.5 mb-3 text-slate-800">
+                                                {(() => {
+                                                    let idx = useLayout ? 1 : 0;
+                                                    if (hoodsData.length > 0 || fansData.length > 0) idx++; 
+                                                    if (fansData.length > 0) idx++; 
+                                                    if (hoodsData.length > 0 || fansData.length > 0) idx++; 
+                                                    idx++; 
+                                                    return ++idx;
+                                                })()}. [스마트 국소배기 진단]
+                                            </h2>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4">
+                                                {smartDiagnostics.map((diag, idx) => (
+                                                    <div key={idx} className={`p-4 rounded-xl border ${diag.status === 'success' ? 'bg-emerald-50/30 border-emerald-200' : diag.status === 'danger' ? 'bg-red-50/30 border-red-200' : diag.status === 'info' ? 'bg-slate-50 border-slate-200' : 'bg-orange-50/30 border-orange-200'} page-break-inside-avoid`}>
+                                                        <h4 className={`text-sm font-black mb-2 flex items-center gap-2 ${diag.status === 'success' ? 'text-emerald-700' : diag.status === 'danger' ? 'text-red-700' : diag.status === 'info' ? 'text-slate-700' : 'text-orange-700'}`}>
+                                                            {diag.status === 'success' ? <CheckCircle2 className="w-4 h-4" /> : diag.status === 'info' ? <InfoIcon className="w-4 h-4" /> : <ZapIcon className="w-4 h-4" />}
+                                                            [{diag.type === 'hood' ? '후드' : diag.type === 'fan' ? '송풍기' : '시스템'}] {diag.name}
+                                                        </h4>
+                                                        {diag.issues.length > 0 && (
+                                                            <div className="mb-2 space-y-1">
+                                                                {diag.issues.map((issue, i) => (
+                                                                    <p key={i} className="text-[11px] text-slate-600 font-bold flex items-start gap-1.5 break-keep"><span className="text-red-400 mt-0.5">•</span> {issue}</p>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {diag.solutions.length > 0 && (
+                                                            <div className={`p-2.5 rounded-lg mt-2 space-y-1 ${diag.status === 'success' ? 'bg-emerald-100/30' : diag.status === 'info' ? 'bg-white' : 'bg-white'}`}>
+                                                                <p className="text-[9px] font-black text-slate-400 mb-0.5">AI 솔루션 제안</p>
+                                                                {diag.solutions.map((sol, i) => (
+                                                                    <p key={i} className="text-[11px] text-slate-700 font-bold flex items-start gap-1.5 break-keep"><span className="text-[#3b82f6] mt-0.5">▶</span> {sol}</p>
+                                                                ))}
+                                                                {diag.references && diag.references.length > 0 && (
+                                                                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-wrap gap-1">
+                                                                        {diag.references.map((ref, i) => (
+                                                                            <span key={i} className="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded font-bold">📘 {ref}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="pt-6 mt-8 page-break-inside-avoid">
                                         <h2 className="text-base font-black border-l-[3px] border-[#3b82f6] pl-2.5 mb-3 text-slate-800">
                                             {(() => {
@@ -1709,7 +1966,8 @@
                                                 idx++; 
                                                 if (fansData.length > 0) idx++; 
                                                 if (hoodsData.length > 0 || fansData.length > 0) idx++; 
-                                                idx++; 
+                                                idx++;
+                                                if (smartDiagnostics && smartDiagnostics.length > 0) idx++;
                                                 return ++idx;
                                             })()}. 점검자 종합 의견 (총평)
                                         </h2>
