@@ -95,6 +95,15 @@
     <script type="text/babel">
         const { useState, useRef, useEffect, useMemo } = React;
 
+        // --- 공기정화장치 종류 및 차압 기준 상수 정의 ---
+        const PURIFIER_TYPES = [
+            { id: 'bag_filter', name: '여과집진기 (백필터)', min: 100, max: 200 },
+            { id: 'cyclone', name: '원심력집진기 (싸이클론)', min: 50, max: 150 },
+            { id: 'scrubber', name: '세정집진기 (스크러버)', min: 50, max: 250 },
+            { id: 'adsorption', name: '흡착탑', min: 50, max: 150 },
+            { id: 'esp', name: '전기집진기', min: 10, max: 50 }
+        ];
+
         // --- SVG 아이콘 컴포넌트 ---
         const Factory = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>;
         const MousePointer2 = ({className}) => <svg className={className||""} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>;
@@ -174,10 +183,10 @@
             // [State] 사업장 및 기본 정보
             const [factoryName, setFactoryName] = useState("");
             const [representativeName, setRepresentativeName] = useState("");
-            const [industryType, setIndustryType] = useState(""); // 추가: 업종
+            const [industryType, setIndustryType] = useState("");
             const [address, setAddress] = useState("");
-            const [measurementDate, setMeasurementDate] = useState(getLocalToday()); // 추가: 측정 시작일
-            const [measurementDuration, setMeasurementDuration] = useState("1"); // 추가: 측정 기간
+            const [measurementDate, setMeasurementDate] = useState(getLocalToday());
+            const [measurementDuration, setMeasurementDuration] = useState("1");
             const [useLayout, setUseLayout] = useState(true); 
             const [overallReview, setOverallReview] = useState("");
             const [overallReviewImage, setOverallReviewImage] = useState(null);
@@ -263,10 +272,10 @@
                         if (data && data.nodes) {
                             setFactoryName(data.factoryName || "");
                             setRepresentativeName(data.representativeName || "");
-                            setIndustryType(data.industryType || ""); // 업종 불러오기
+                            setIndustryType(data.industryType || "");
                             setAddress(data.address || "");
-                            setMeasurementDate(data.measurementDate || getLocalToday()); // 측정일 불러오기
-                            setMeasurementDuration(data.measurementDuration || "1"); // 측정기간 불러오기
+                            setMeasurementDate(data.measurementDate || getLocalToday());
+                            setMeasurementDuration(data.measurementDuration || "1");
                             setOverallReview(data.overallReview || "");
                             setOverallReviewImage(data.overallReviewImage || null);
                             setSelectedGuides(data.selectedGuides || []);
@@ -301,7 +310,6 @@
                 setIsGeneratingPDF(true);
                 document.documentElement.classList.add('pdf-generating');
                 
-                // DOM 업데이트 대기를 위해 setTimeout을 이중으로 활용하여 안정성 증대
                 setTimeout(() => {
                     requestAnimationFrame(async () => {
                         const element = document.getElementById('report-content-wrapper');
@@ -341,7 +349,7 @@
                             document.documentElement.classList.remove('pdf-generating');
                         }
                     });
-                }, 800); // 렌더링 지연 시간 약간 증가시켜 안정성 확보
+                }, 800);
             };
 
             const handlePrint = () => {
@@ -349,22 +357,18 @@
                 document.documentElement.classList.add('pdf-generating');
                 setTimeout(() => {
                     window.print();
-                    document.documentElement.classList.remove('pdf-generating'); // 인쇄 취소/완료 후 복구
+                    document.documentElement.classList.remove('pdf-generating');
                 }, 500);
             };
 
             // --- Canvas 서명 핸들러 ---
             const startDrawingSignature = (e) => {
-                // 터치 스크롤 방지 (중요)
                 e.preventDefault();
-                
                 const canvas = signCanvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const rect = canvas.getBoundingClientRect();
-                
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-                
                 const x = (e.clientX - rect.left) * scaleX;
                 const y = (e.clientY - rect.top) * scaleY;
                 
@@ -372,7 +376,6 @@
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
                 ctx.strokeStyle = "#1e293b"; 
-                
                 ctx.beginPath();
                 ctx.moveTo(x, y);
                 isDrawingRef.current = true;
@@ -381,16 +384,13 @@
             const drawSignature = (e) => {
                 e.preventDefault();
                 if (!isDrawingRef.current) return;
-                
                 const canvas = signCanvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-                
                 const x = (e.clientX - rect.left) * scaleX;
                 const y = (e.clientY - rect.top) * scaleY;
-                
                 ctx.lineTo(x, y);
                 ctx.stroke();
             };
@@ -487,7 +487,8 @@
                     id: `fan-${Date.now()}`, type: 'fan', x, y,
                     data: {
                         fanName: `송풍기-${nodes.filter(n => n.type === 'fan').length + 1}`,
-                        ratedQ: "", ratedSP: "", measuredQ: "", measuredSP: ""
+                        ratedQ: "", ratedSP: "", measuredQ: "", measuredSP: "",
+                        hasPurifier: false, purifierType: "bag_filter", purifierDiffPress: ""
                     }
                 };
                 setNodes([...nodes, newNode]);
@@ -640,12 +641,17 @@
             // --- 노드 데이터 업데이트 및 계산 로직 ---
             const updateNodeData = (field, value) => {
                 if (!selectedNodeId) return;
-                setNodes(nodes.map(n => {
+                setNodes(prev => prev.map(n => {
                     if (n.id === selectedNodeId) {
                         let newData = { ...n.data, [field]: value };
                         if (field === 'hoodType' && value !== 'enclosure') newData.isPermitted = false;
                         if (['hoodType', 'materialState', 'isPermitted'].includes(field) || (field === 'hoodType' && newData.isPermitted)) {
                             newData.controlVelocity = getAutoControlVelocity(newData.hoodType, newData.materialState, newData.isPermitted || false);
+                        }
+                        // 공기정화장치 유무 해제 시 입력값 초기화
+                        if (field === 'hasPurifier' && !value) {
+                            newData.purifierType = "bag_filter";
+                            newData.purifierDiffPress = "";
                         }
                         return { ...n, data: newData };
                     }
@@ -715,7 +721,20 @@
                         else if (eff >= 60) status = '미흡';
                         else status = '불량';
                     }
-                    return { ...fan, calc: { connectedHoods, sumCurrentQ, sumRequiredQ, eff, suctionRatio, status } };
+
+                    // --- 공기정화장치 차압 판정 ---
+                    let purifierStatus = '-';
+                    if (fan.data.hasPurifier && fan.data.purifierType && fan.data.purifierDiffPress !== "") {
+                        const pType = PURIFIER_TYPES.find(p => p.id === fan.data.purifierType);
+                        const dp = parseFloat(fan.data.purifierDiffPress);
+                        if (pType) {
+                            if (dp < pType.min) purifierStatus = '미흡(미만)';
+                            else if (dp > pType.max) purifierStatus = '미흡(초과)';
+                            else purifierStatus = '양호';
+                        }
+                    }
+
+                    return { ...fan, calc: { connectedHoods, sumCurrentQ, sumRequiredQ, eff, suctionRatio, status, purifierStatus } };
                 });
             }, [nodes, hoodsData]);
 
@@ -884,13 +903,14 @@
                     });
                 }
 
-                // 4. 송풍기 효율 및 배기량 진단
+                // 4. 송풍기 및 공기정화장치 효율 진단
                 fansData.forEach(fan => {
                     const { data, calc } = fan;
                     let issues = [];
                     let solutions = [];
                     let refs = new Set();
 
+                    // 송풍기 효율 평가
                     if (calc.status !== '양호' && calc.status !== '-') {
                         issues.push(`송풍기 효율이 ${calc.status}(${calc.eff.toFixed(1)}%) 상태입니다.`);
                         if (calc.suctionRatio > 100) {
@@ -911,14 +931,28 @@
                         refs.add('KOSHA GUIDE W-1-2019');
                     }
 
+                    // --- 공기정화장치 평가 연동 ---
+                    if (data.hasPurifier && calc.purifierStatus.includes('미흡')) {
+                        const pName = PURIFIER_TYPES.find(p=>p.id===data.purifierType)?.name || '공기정화장치';
+                        if (calc.purifierStatus === '미흡(미만)') {
+                            issues.push(`[${pName}] 측정 차압(${data.purifierDiffPress} mmH2O)이 적정 범위 미만입니다.`);
+                            solutions.push(`공기정화장치 내부 필터의 찢어짐, 파손 또는 탈락이 의심됩니다. 유해물질이 정화되지 않고 외부로 배출될 수 있으므로 내부를 즉시 점검하십시오.`);
+                            refs.add('KOSHA GUIDE W-1-2019 (공기정화장치 유지관리)');
+                        } else if (calc.purifierStatus === '미흡(초과)') {
+                            issues.push(`[${pName}] 측정 차압(${data.purifierDiffPress} mmH2O)이 적정 범위를 초과하여 과부하 상태입니다.`);
+                            solutions.push(`필터(여재)의 눈막힘 현상이 심각하여 배기 시스템 전체의 유량을 급감시키고 있습니다. 즉시 필터를 교체하거나 털어내기(탈진)를 실시하십시오.`);
+                            refs.add('KOSHA GUIDE W-1-2019 (공기정화장치 유지관리)');
+                        }
+                    }
+
                     if (issues.length > 0) {
                         diagnostics.push({
                             type: 'fan', id: fan.id, name: data.fanName, status: 'danger', issues, solutions, references: Array.from(refs)
                         });
-                    } else if (calc.status === '양호' && calc.sumRequiredQ <= fanCapacity) {
+                    } else if (calc.status === '양호' && calc.sumRequiredQ <= fanCapacity && calc.purifierStatus !== '미흡(미만)' && calc.purifierStatus !== '미흡(초과)') {
                         diagnostics.push({
                             type: 'fan', id: fan.id, name: data.fanName, status: 'success', issues: [],
-                            solutions: ["송풍기 효율 및 처리 용량이 연결된 후드들의 필요 배기량을 충분히 감당하고 있습니다."],
+                            solutions: ["송풍기 효율, 처리 용량, 공기정화장치 차압 모두 시스템 안정성을 충분히 유지하고 있습니다."],
                             references: ['KOSHA GUIDE W-1-2019']
                         });
                     }
@@ -1310,11 +1344,50 @@
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                        
+                                                        {/* --- 추가: 공기정화장치 설정 (제원 입력창) --- */}
+                                                        <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-4">
+                                                            <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                                                                <h3 className="text-xs font-bold text-emerald-800">공기정화장치 유무</h3>
+                                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                                    <input type="checkbox" className="sr-only peer" checked={selectedNode.data.hasPurifier || false} onChange={e => updateNodeData('hasPurifier', e.target.checked)} />
+                                                                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                                                </label>
+                                                            </div>
+                                                            {selectedNode.data.hasPurifier && (
+                                                                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                                                                    <div>
+                                                                        <label className="block text-[10px] font-bold mb-1.5 text-emerald-700">공기정화장치 종류 선택</label>
+                                                                        <select value={selectedNode.data.purifierType || 'bag_filter'} onChange={e => updateNodeData('purifierType', e.target.value)} 
+                                                                            className="w-full p-2.5 border border-emerald-200 rounded-lg text-sm font-bold outline-none focus:border-emerald-500 bg-white transition-all text-emerald-900">
+                                                                            {PURIFIER_TYPES.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-[10px] font-bold mb-1.5 text-emerald-700">측정 차압 (mmH2O)</label>
+                                                                        <div className="flex gap-2 items-center">
+                                                                            <input type="number" step="1" value={selectedNode.data.purifierDiffPress || ""} onChange={e => updateNodeData('purifierDiffPress', e.target.value)} 
+                                                                                placeholder="측정 차압 입력" className="flex-1 p-2.5 border border-emerald-200 rounded-lg text-sm font-bold outline-none focus:border-emerald-500 bg-white transition-all text-emerald-900" />
+                                                                            {(() => {
+                                                                                const pData = fansData.find(f => f.id === selectedNode.id);
+                                                                                if(pData && pData.calc.purifierStatus !== '-') {
+                                                                                    const isGood = pData.calc.purifierStatus === '양호';
+                                                                                    return <span className={`px-3 py-2.5 rounded-lg text-xs font-black whitespace-nowrap border ${isGood ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-600 border-red-200'}`}>{isGood ? '양호' : pData.calc.purifierStatus}</span>
+                                                                                }
+                                                                                return null;
+                                                                            })()}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {/* ------------------------------------- */}
+
                                                         {(() => {
                                                             const fData = fansData.find(f => f.id === selectedNode.id);
                                                             if (!fData || !fData.data.ratedQ) return null;
                                                             return (
-                                                                <div className={`p-4 rounded-xl border-2 font-bold text-sm flex items-center justify-between shadow-sm ${fData.calc.status === '양호' ? 'bg-emerald-50 border-emerald-400 text-emerald-800' : fData.calc.status === '미흡' ? 'bg-orange-50 border-orange-400 text-orange-800' : 'bg-red-50 border-red-400 text-red-800'}`}>
+                                                                <div className={`p-4 rounded-xl border-2 font-bold text-sm flex items-center justify-between shadow-sm ${fData.calc.status === '양호' ? 'bg-indigo-50 border-indigo-400 text-indigo-800' : fData.calc.status === '미흡' ? 'bg-orange-50 border-orange-400 text-orange-800' : 'bg-red-50 border-red-400 text-red-800'}`}>
                                                                    <span>송풍기 효율: {fData.calc.eff.toFixed(1)}%</span>
                                                                    <span className="px-3 py-1 rounded-full bg-white bg-opacity-60">{fData.calc.status}</span>
                                                                 </div>
@@ -2098,6 +2171,12 @@
                                                                     <td className="p-2.5 border-l border-slate-100 font-black text-indigo-700">
                                                                         {data.fanName}
                                                                         <div className="text-[9px] font-medium text-slate-400 mt-1">연결 후드: {calc.connectedHoods.length}개소</div>
+                                                                        {data.hasPurifier && (
+                                                                            <div className="text-[9px] font-bold mt-1.5 text-emerald-600 bg-emerald-50 p-1.5 rounded-lg border border-emerald-100 leading-tight">
+                                                                                + {PURIFIER_TYPES.find(p=>p.id===data.purifierType)?.name.split(' ')[0]}<br/>
+                                                                                (차압: {data.purifierDiffPress || '-'} mmH2O) <span className={calc.purifierStatus.includes('미흡') ? 'text-red-500' : 'text-emerald-700'}>[{calc.purifierStatus}]</span>
+                                                                            </div>
+                                                                        )}
                                                                     </td>
                                                                     <td className="p-2.5 border-l border-slate-100 text-center">
                                                                         <span className="font-black text-indigo-600">{data.measuredQ || '-'}</span> <span className="text-slate-300 font-bold mx-1">/</span> <span className="font-bold text-slate-500">{data.ratedQ || '-'}</span>
